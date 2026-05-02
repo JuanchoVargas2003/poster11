@@ -1,960 +1,1877 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#0a0f14" />
-  <title>WebAR · Síntesis y caracterización EIS de membrana PLA dopada</title>
-  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-  <script src="https://raw.githack.com/AR-js-org/AR.js/2.2.2/aframe/build/aframe-ar.js"></script>
-  <style>
-    :root {
-      --bg: #0a0f14;
-      --panel: rgba(12, 18, 26, 0.58);
-      --panel-strong: rgba(10, 15, 20, 0.84);
-      --line: rgba(148, 190, 255, 0.18);
-      --text: #eaf4ff;
-      --muted: rgba(234, 244, 255, 0.72);
-      --accent: #6bd5ff;
-      --accent-2: #9dffbf;
-      --ok: #75f0b5;
-      --warn: #ffb86b;
-      --shadow: 0 18px 40px rgba(0, 0, 0, .38);
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratorio de Materiales — Síntesis PLA/H₃PO₂ & EIS</title>
+    <style>
+        :root {
+            --bg-deep: #050b12;
+            --bg-panel: #0a111c;
+            --surface: #111924;
+            --border: #1c2a3a;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --accent-cyan: #00d4ff;
+            --accent-mint: #4adec0;
+            --accent-ice: #7ec8f8;
+            --accent-violet: #a78bfa;
+            --accent-amber: #f59e0b;
+            --accent-green: #34d399;
+            --glass-bg: rgba(10, 18, 28, 0.75);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --font: 'Segoe UI', 'Roboto', system-ui, -apple-system, sans-serif;
+        }
 
-    html, body {
-      width: 100%; height: 100%; margin: 0; overflow: hidden;
-      background: radial-gradient(1200px 900px at 50% 15%, #14202d 0%, #0a0f14 42%, #05080b 100%);
-      font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
-      color: var(--text);
-      touch-action: manipulation;
-      -webkit-tap-highlight-color: transparent;
-    }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-    #overlay {
-      position: fixed; inset: 0; z-index: 40; display: grid; place-items: center;
-      background: linear-gradient(180deg, rgba(7,10,14,.92), rgba(7,10,14,.78));
-      backdrop-filter: blur(18px);
-    }
+        body {
+            background: var(--bg-deep);
+            font-family: var(--font);
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            color: var(--text-primary);
+        }
 
-    .overlay-card {
-      width: min(92vw, 560px);
-      border: 1px solid rgba(141, 192, 255, 0.18);
-      background: linear-gradient(180deg, rgba(15,22,31,.86), rgba(10,15,20,.76));
-      border-radius: 26px;
-      box-shadow: var(--shadow);
-      padding: 24px 22px 18px;
-    }
+        #app-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: row;
+        }
 
-    .title {
-      font-size: 1.3rem; line-height: 1.15; font-weight: 700; margin: 0 0 10px; letter-spacing: .2px;
-    }
+        #three-canvas {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            cursor: grab;
+        }
+        #three-canvas:active {
+            cursor: grabbing;
+        }
+        #three-canvas.clickable-cursor {
+            cursor: pointer;
+        }
 
-    .subtitle {
-      margin: 0 0 18px; color: var(--muted); font-size: .96rem; line-height: 1.45;
-    }
+        /* UI Overlay */
+        #ui-overlay {
+            position: relative;
+            z-index: 10;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            width: 100%;
+            height: 100%;
+            padding: 16px;
+        }
+        #ui-panel {
+            pointer-events: all;
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-lg);
+            padding: 20px 22px;
+            max-width: 420px;
+            width: 100%;
+            align-self: flex-end;
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            transition: all 0.35s ease;
+        }
+        #ui-panel.completed-all {
+            border-color: var(--accent-mint);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6), 0 0 40px rgba(74, 222, 192, 0.12);
+        }
 
-    .btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        #panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+        #project-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            color: var(--accent-ice);
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+        #step-badge {
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: var(--accent-cyan);
+            color: #000;
+            padding: 4px 10px;
+            border-radius: 20px;
+            letter-spacing: 0.03em;
+            white-space: nowrap;
+            transition: all 0.3s;
+        }
+        #step-badge.completed {
+            background: var(--accent-mint);
+        }
 
-    button {
-      appearance: none; border: 0; cursor: pointer; font-family: inherit; font-weight: 700; letter-spacing: .2px;
-      border-radius: 18px; padding: 13px 16px; min-height: 48px;
-      transition: transform .15s ease, opacity .15s ease, box-shadow .15s ease, background .15s ease;
-    }
+        #step-description {
+            font-size: 1.05rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            line-height: 1.4;
+            min-height: 44px;
+            transition: all 0.3s;
+        }
+        #step-instruction {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            font-style: italic;
+            transition: all 0.3s;
+        }
 
-    button:active { transform: scale(.985); }
-    button:disabled { opacity: .72; cursor: wait; }
+        /* Progress bar */
+        #progress-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        #progress-bar-outer {
+            flex: 1;
+            height: 4px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        #progress-bar-inner {
+            height: 100%;
+            background: var(--accent-cyan);
+            border-radius: 4px;
+            transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 0%;
+        }
+        #progress-text {
+            font-size: 0.7rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            white-space: nowrap;
+            min-width: 30px;
+            text-align: right;
+        }
 
-    .primary {
-      color: #03131a; background: linear-gradient(135deg, #7fe3ff, #92ffc1);
-      box-shadow: 0 12px 28px rgba(99, 223, 255, .22);
-    }
+        /* Graph panels (step 9) */
+        #graphs-container {
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+            max-height: 340px;
+            transition: all 0.4s;
+        }
+        #graphs-container.visible {
+            display: flex;
+        }
+        .graph-canvas {
+            width: 100%;
+            height: 140px;
+            background: #080f18;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+        }
+        #nyquist-canvas {
+            height: 150px;
+        }
+        #bode-canvas {
+            height: 150px;
+        }
+        .graph-label {
+            font-size: 0.65rem;
+            color: var(--text-secondary);
+            letter-spacing: 0.03em;
+            text-align: center;
+            margin-top: -6px;
+            margin-bottom: 2px;
+        }
 
-    .secondary {
-      color: var(--text); background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.08);
-    }
+        #params-text {
+            font-size: 0.7rem;
+            color: var(--accent-ice);
+            font-family: 'SF Mono', 'Cascadia Code', 'Consolas', monospace;
+            letter-spacing: 0.02em;
+            line-height: 1.5;
+            display: none;
+        }
+        #params-text.visible {
+            display: block;
+        }
 
-    #startStatus {
-      margin-top: 12px; color: var(--muted); font-size: .86rem; min-height: 1.2em;
-    }
+        /* Buttons */
+        #btn-reset {
+            display: none;
+            pointer-events: all;
+            background: transparent;
+            border: 1px solid var(--accent-violet);
+            color: var(--accent-violet);
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-family: var(--font);
+            font-weight: 600;
+            font-size: 0.8rem;
+            cursor: pointer;
+            letter-spacing: 0.03em;
+            transition: all 0.3s;
+            align-self: center;
+        }
+        #btn-reset:hover {
+            background: var(--accent-violet);
+            color: #000;
+        }
+        #btn-reset.visible {
+            display: block;
+        }
 
-    #hud {
-      position: fixed; left: 50%; top: 14px; transform: translateX(-50%);
-      width: min(94vw, 760px); z-index: 25; pointer-events: none; display: none;
-    }
-
-    .hud-panel {
-      pointer-events: auto; border: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(18px);
-      border-radius: 22px; box-shadow: var(--shadow); padding: 14px 16px 12px;
-    }
-
-    #instructionText {
-      font-size: .98rem; line-height: 1.35; color: var(--text); margin: 0 0 10px; min-height: 2.2em;
-    }
-
-    .dots { display: grid; grid-template-columns: repeat(9, 1fr); gap: 7px; }
-
-    .dot {
-      height: 10px; border-radius: 999px; background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.06);
-      transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
-    }
-
-    .dot.active {
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      box-shadow: 0 0 0 4px rgba(107,213,255,.12);
-      transform: scale(1.06);
-    }
-
-    .dot.done { background: rgba(118,242,176,.9); }
-
-    #finalBadge {
-      margin-top: 10px; display: none; border: 1px solid rgba(118,242,176,.25);
-      background: rgba(12, 36, 24, 0.72); color: #bdf8da;
-      border-radius: 16px; padding: 10px 12px; font-weight: 700;
-    }
-
-    #restartWrap { margin-top: 10px; display: none; }
-    #restartBtn { width: 100%; background: linear-gradient(135deg, #ffe59a, #ffb86b); color: #271400; }
-    #touchHint { margin-top: 8px; font-size: .82rem; color: var(--muted); line-height: 1.35; }
-
-    #sceneWrap { position: fixed; inset: 0; z-index: 1; }
-    a-scene { width: 100%; height: 100%; }
-
-    canvas.chart-tex {
-      position: absolute; left: -9999px; top: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none;
-    }
-  </style>
+        /* Responsive */
+        @media (max-width: 768px) {
+            #ui-overlay {
+                padding: 10px;
+                justify-content: flex-end;
+            }
+            #ui-panel {
+                max-width: 100%;
+                padding: 14px 16px;
+                gap: 10px;
+                border-radius: var(--radius-md);
+            }
+            #project-title {
+                font-size: 0.7rem;
+            }
+            #step-description {
+                font-size: 0.9rem;
+                min-height: 36px;
+            }
+            #graphs-container {
+                max-height: 240px;
+            }
+            .graph-canvas {
+                height: 100px;
+            }
+            #nyquist-canvas {
+                height: 110px;
+            }
+            #bode-canvas {
+                height: 110px;
+            }
+        }
+        @media (max-width: 480px) {
+            #ui-panel {
+                padding: 10px 12px;
+                gap: 6px;
+                border-radius: var(--radius-sm);
+            }
+            #step-description {
+                font-size: 0.8rem;
+                min-height: 30px;
+            }
+            #project-title {
+                font-size: 0.65rem;
+            }
+            .graph-canvas {
+                height: 80px;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div id="overlay">
-    <div class="overlay-card">
-      <h1 class="title">Minijuego WebAR: Síntesis y caracterización EIS de membrana PLA dopada</h1>
-      <p class="subtitle">Escanea el marcador Hiro con tu smartphone y completa 9 acciones experimentales tocando los objetos virtuales. La cámara se abre primero y luego aparece toda la experiencia científica completa.</p>
-      <div class="btn-row">
-        <button id="startBtn" class="primary">Comenzar experimento</button>
-        <button id="demoBtn" class="secondary" type="button">Ver instrucciones</button>
-      </div>
-      <div id="startStatus">La cámara se activará al tocar el botón.</div>
-      <div id="touchHint">Usa una superficie bien iluminada, apunta la cámara trasera al marcador y mantén el teléfono estable.</div>
+    <div id="app-container">
+        <canvas id="three-canvas"></canvas>
+        <div id="ui-overlay">
+            <div id="ui-panel">
+                <div id="panel-header">
+                    <span id="project-title">🔬 PLA/H₃PO₂ · EIS</span>
+                    <span id="step-badge">Paso 1 de 9</span>
+                </div>
+                <div id="step-description">Pesar 1 g de PLA en balanza analítica</div>
+                <div id="step-instruction">🖱️ Haz clic sobre la balanza para iniciar</div>
+                <div id="progress-container">
+                    <div id="progress-bar-outer"><div id="progress-bar-inner"></div></div>
+                    <span id="progress-text">0/9</span>
+                </div>
+                <div id="graphs-container">
+                    <span class="graph-label">Nyquist — Z' vs −Z''</span>
+                    <canvas id="nyquist-canvas" class="graph-canvas"></canvas>
+                    <span class="graph-label">Bode — log|Z| & Fase vs log(f)</span>
+                    <canvas id="bode-canvas" class="graph-canvas"></canvas>
+                </div>
+                <div id="params-text">Rs=10.2Ω · Rct=48.7Ω · Cdl=12.5µF</div>
+                <button id="btn-reset">↺ Reiniciar experiencia</button>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <div id="hud">
-    <div class="hud-panel">
-      <p id="instructionText">Preparando experimento…</p>
-      <div class="dots" id="stepDots"></div>
-      <div id="finalBadge">Experimento completado</div>
-      <div id="restartWrap"><button id="restartBtn">Reiniciar</button></div>
-    </div>
-  </div>
-
-  <div id="sceneWrap">
-    <a-scene
-      id="arScene"
-      embedded
-      vr-mode-ui="enabled: false"
-      renderer="antialias: true; alpha: true; precision: mediump; colorManagement: true"
-      arjs="sourceType: webcam; facingMode: environment; sourceWidth: 1280; sourceHeight: 720; displayWidth: 1280; displayHeight: 720; trackingMethod: best; debugUIEnabled: false;"
-      autoplay="false"
-    >
-      <a-assets>
-        <canvas id="nyquistCanvas" width="512" height="512"></canvas>
-        <canvas id="bodeCanvas" width="512" height="256"></canvas>
-      </a-assets>
-
-      <a-marker preset="hiro" emitevents="true" id="hiroMarker">
-        <a-entity id="labRoot" position="0 0 0" scale="1 1 1"></a-entity>
-      </a-marker>
-
-      <a-entity id="cameraRig" camera cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .clickable" look-controls="enabled: false"></a-entity>
-
-      <a-entity light="type: ambient; intensity: 1.1; color: #ffffff"></a-entity>
-      <a-entity light="type: directional; intensity: 0.85; color: #dff6ff" position="1 2 1"></a-entity>
-    </a-scene>
-  </div>
-
-  <script>
-    (() => {
-      const scene = document.getElementById('arScene');
-      const overlay = document.getElementById('overlay');
-      const hud = document.getElementById('hud');
-      const instructionText = document.getElementById('instructionText');
-      const stepDots = document.getElementById('stepDots');
-      const finalBadge = document.getElementById('finalBadge');
-      const restartWrap = document.getElementById('restartWrap');
-      const restartBtn = document.getElementById('restartBtn');
-      const startBtn = document.getElementById('startBtn');
-      const demoBtn = document.getElementById('demoBtn');
-      const startStatus = document.getElementById('startStatus');
-      const labRoot = document.getElementById('labRoot');
-      const nyquistCanvas = document.getElementById('nyquistCanvas');
-      const bodeCanvas = document.getElementById('bodeCanvas');
-      const nyquistCtx = nyquistCanvas.getContext('2d');
-      const bodeCtx = bodeCanvas.getContext('2d');
-
-      const state = {
-        started: false,
-        complete: false,
-        currentStep: 1,
-        busy: false,
-        sceneReady: false,
-        pendingStart: false,
-        spinRAF: 0,
-        dryingTimer: 0,
-        dropTimer: 0,
-        measureTimer: 0,
-        vaporOn: false,
-        stirringOn: false,
-        dryingOn: false,
-        measureProgress: 0
-      };
-
-      const model = {
-        Rs: 10.2,
-        Rct: 48.7,
-        Cdl: 12.5e-6,
-        fMin: 1e-2,
-        fMax: 1e5,
-        points: 200
-      };
-
-      const stepMessages = [
-        'Paso 1/9 · Toca la balanza para pesar 1 g de PLA.',
-        'Paso 2/9 · Toca el matraz para disolver con calor y reflujo.',
-        'Paso 3/9 · Toca la micropipeta para añadir H₃PO₂.',
-        'Paso 4/9 · Toca el matraz para agitar 16 h.',
-        'Paso 5/9 · Toca el matraz para verter en placa Petri.',
-        'Paso 6/9 · Toca el desecador para iniciar el secado (24 h).',
-        'Paso 7/9 · Toca el disco de membrana para cortarlo.',
-        'Paso 8/9 · Toca la celda EIS para montar la muestra.',
-        'Paso 9/9 · Toca la celda EIS para iniciar la medición.'
-      ];
-
-      const steps = {};
-      const vaporParticles = [];
-      const silicaParticles = [];
-
-      function mk(tag, attrs = {}, parent = labRoot) {
-        const el = document.createElement(tag);
-        Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
-        parent.appendChild(el);
-        return el;
-      }
-
-      function setVisible(el, visible) {
-        if (el) el.setAttribute('visible', visible ? 'true' : 'false');
-      }
-
-      function registerClickable(el) {
-        el.classList.add('clickable');
-        el.addEventListener('click', onObjectClick);
-        el.addEventListener('touchstart', onObjectClick, { passive: true });
-      }
-
-      function createText(value, position, size = '0.25', color = '#eaf4ff', align = 'center') {
-        return mk('a-text', {
-          value,
-          position,
-          align,
-          color,
-          width: '3.0',
-          wrapCount: '30',
-          shader: 'flat',
-          side: 'double',
-          baseline: 'center',
-          scale: `${size} ${size} ${size}`,
-          opacity: '1'
-        });
-      }
-
-      function glass(color = '#b9e9ff', opacity = 0.35) {
-        return `color: ${color}; opacity: ${opacity}; transparent: true; metalness: 0.12; roughness: 0.14; side: double`;
-      }
-
-      function clearTimers() {
-        if (state.spinRAF) cancelAnimationFrame(state.spinRAF);
-        if (state.dropTimer) clearInterval(state.dropTimer);
-        if (state.dryingTimer) clearInterval(state.dryingTimer);
-        if (state.measureTimer) clearInterval(state.measureTimer);
-        state.spinRAF = 0;
-        state.dropTimer = 0;
-        state.dryingTimer = 0;
-        state.measureTimer = 0;
-      }
-
-      function buildDots() {
-        stepDots.innerHTML = '';
-        for (let i = 0; i < 9; i++) {
-          const d = document.createElement('div');
-          d.className = 'dot';
-          stepDots.appendChild(d);
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.157.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.157.0/examples/jsm/"
+            }
         }
-      }
+    </script>
 
-      function updateDots(step) {
-        [...stepDots.children].forEach((d, i) => {
-          d.classList.remove('active', 'done');
-          if (i + 1 < step) d.classList.add('done');
-          if (i + 1 === step) d.classList.add('active');
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // ==================== DOM ELEMENTS ====================
+        const canvas3D = document.getElementById('three-canvas');
+        const uiPanel = document.getElementById('ui-panel');
+        const stepBadge = document.getElementById('step-badge');
+        const stepDescription = document.getElementById('step-description');
+        const stepInstruction = document.getElementById('step-instruction');
+        const progressBarInner = document.getElementById('progress-bar-inner');
+        const progressText = document.getElementById('progress-text');
+        const graphsContainer = document.getElementById('graphs-container');
+        const nyquistCanvas = document.getElementById('nyquist-canvas');
+        const bodeCanvas = document.getElementById('bode-canvas');
+        const paramsText = document.getElementById('params-text');
+        const btnReset = document.getElementById('btn-reset');
+        const nyquistCtx = nyquistCanvas.getContext('2d');
+        const bodeCtx = bodeCanvas.getContext('2d');
+
+        // ==================== THREE.JS SETUP ====================
+        const renderer = new THREE.WebGLRenderer({ canvas: canvas3D, antialias: true, alpha: true });
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        renderer.toneMappingExposure = 1.1;
+
+        const scene = new THREE.Scene();
+        scene.fog = new THREE.Fog('#050b12', 6, 22);
+        scene.background = new THREE.Color('#050b12');
+
+        const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.5, 40);
+        camera.position.set(7, 5.5, 9);
+        camera.lookAt(0, 0.6, 0);
+
+        const controls = new OrbitControls(camera, renderer.domElement);
+        controls.target.set(0, 0.5, 0);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.minDistance = 2.5;
+        controls.maxDistance = 16;
+        controls.maxPolarAngle = Math.PI / 1.7;
+        controls.minPolarAngle = 0.25;
+        controls.update();
+        controls.autoRotate = true;
+        controls.autoRotateSpeed = 0.25;
+
+        // ==================== LIGHTING ====================
+        const ambientLight = new THREE.AmbientLight('#1a2a40', 1.6);
+        scene.add(ambientLight);
+
+        const hemisphereLight = new THREE.HemisphereLight('#8899cc', '#1a2230', 0.7);
+        scene.add(hemisphereLight);
+
+        const overheadSpot = new THREE.SpotLight('#e8f0ff', 18, 20, Math.PI / 3.5, 0.3, 0.5);
+        overheadSpot.position.set(0, 8, 2);
+        overheadSpot.castShadow = true;
+        overheadSpot.shadow.mapSize.width = 1024;
+        overheadSpot.shadow.mapSize.height = 1024;
+        overheadSpot.shadow.camera.near = 0.3;
+        overheadSpot.shadow.camera.far = 30;
+        overheadSpot.shadow.bias = -0.0004;
+        overheadSpot.shadow.normalBias = 0.02;
+        scene.add(overheadSpot);
+
+        const fillLight = new THREE.PointLight('#8899cc', 8, 12, 1.5);
+        fillLight.position.set(-4, 3, 4);
+        scene.add(fillLight);
+
+        const accentLight = new THREE.PointLight('#00d4ff', 6, 8, 2);
+        accentLight.position.set(3, 2.5, -2);
+        scene.add(accentLight);
+
+        // ==================== MATERIALS ====================
+        const matLabBench = new THREE.MeshStandardMaterial({ color: '#1a1f28', roughness: 0.55, metalness: 0.3 });
+        const matMetalBrushed = new THREE.MeshStandardMaterial({ color: '#889099', roughness: 0.35, metalness: 0.85 });
+        const matMetalDark = new THREE.MeshStandardMaterial({ color: '#3a4048', roughness: 0.4, metalness: 0.8 });
+        const matGlass = new THREE.MeshStandardMaterial({
+            color: '#c8ddf8',
+            roughness: 0.15,
+            metalness: 0.05,
+            transparent: true,
+            opacity: 0.45,
+            envMapIntensity: 0.3,
         });
-      }
-
-      function hideAllSteps() {
-        Object.values(steps).forEach(group => setVisible(group, false));
-      }
-
-      function showStep(n) {
-        hideAllSteps();
-        setVisible(steps[n], true);
-        instructionText.textContent = stepMessages[n - 1];
-        updateDots(n);
-      }
-
-      function resetSilica() {
-        silicaParticles.forEach(s => {
-          const mesh = s.getObject3D('mesh');
-          if (mesh && mesh.material) mesh.material.color.set('#ff8c00');
+        const matGlassBlue = new THREE.MeshStandardMaterial({
+            color: '#b8d4f0',
+            roughness: 0.12,
+            metalness: 0.04,
+            transparent: true,
+            opacity: 0.5,
         });
-      }
+        const matPLA = new THREE.MeshStandardMaterial({ color: '#f5f0e8', roughness: 0.5, metalness: 0.02 });
+        const matSolution = new THREE.MeshStandardMaterial({
+            color: '#5ba8d8',
+            roughness: 0.2,
+            metalness: 0.03,
+            transparent: true,
+            opacity: 0.7,
+            emissive: '#1a3a50',
+            emissiveIntensity: 0.25,
+        });
+        const matAmber = new THREE.MeshStandardMaterial({
+            color: '#f59e0b',
+            roughness: 0.2,
+            metalness: 0.05,
+            emissive: '#3d2000',
+            emissiveIntensity: 0.5,
+            transparent: true,
+            opacity: 0.85,
+        });
+        const matMembrane = new THREE.MeshStandardMaterial({
+            color: '#4ade80',
+            roughness: 0.3,
+            metalness: 0.05,
+            transparent: true,
+            opacity: 0.75,
+            emissive: '#0a3010',
+            emissiveIntensity: 0.3,
+        });
+        const matDesiccantOrange = new THREE.MeshStandardMaterial({
+            color: '#f97316',
+            roughness: 0.4,
+            metalness: 0.05,
+            emissive: '#2a1000',
+            emissiveIntensity: 0.2,
+        });
+        const matGlowRing = new THREE.MeshStandardMaterial({
+            color: '#00d4ff',
+            roughness: 0.2,
+            metalness: 0.1,
+            emissive: '#00d4ff',
+            emissiveIntensity: 1.2,
+            transparent: true,
+            opacity: 0.7,
+        });
+        const matFloor = new THREE.MeshStandardMaterial({ color: '#0d1117', roughness: 0.7, metalness: 0.1 });
+        const matWall = new THREE.MeshStandardMaterial({ color: '#0f1620', roughness: 0.6, metalness: 0.08 });
 
-      function resetExperiment() {
-        clearTimers();
-        state.complete = false;
-        state.busy = false;
-        state.currentStep = 1;
-        state.vaporOn = false;
-        state.stirringOn = false;
-        state.dryingOn = false;
-        state.measureProgress = 0;
-        finalBadge.style.display = 'none';
-        restartWrap.style.display = 'none';
-        resetSilica();
+        // ==================== SCENE ENVIRONMENT ====================
+        // Floor
+        const floor = new THREE.Mesh(new THREE.PlaneGeometry(20, 20), matFloor);
+        floor.rotation.x = -Math.PI / 2;
+        floor.position.y = -1.8;
+        floor.receiveShadow = true;
+        scene.add(floor);
 
-        const lentils = steps[1]?.querySelector('#plaLentils');
-        if (lentils) setVisible(lentils, true);
-
-        const drop = steps[3]?.querySelector('#acidDrop');
-        if (drop) {
-          drop.setAttribute('position', '0.50 0.42 0.06');
-          setVisible(drop, true);
+        // Back wall panels
+        for (let i = -2; i <= 2; i++) {
+            const panel = new THREE.Mesh(new THREE.BoxGeometry(3.2, 5, 0.15), matWall);
+            panel.position.set(i * 3.4, 0.7, -5.5);
+            panel.castShadow = true;
+            panel.receiveShadow = true;
+            scene.add(panel);
         }
 
-        const petriLiquid = steps[5]?.querySelector('#petriLiquid');
-        if (petriLiquid) setVisible(petriLiquid, false);
+        // Side shelves
+        const shelfGeo = new THREE.BoxGeometry(2.5, 0.12, 0.8);
+        for (let sx = -1; sx <= 1; sx += 2) {
+            for (let sy = 0; sy < 3; sy++) {
+                const shelf = new THREE.Mesh(shelfGeo, matMetalDark);
+                shelf.position.set(sx * 7, 0.2 + sy * 1.4, -4);
+                shelf.castShadow = true;
+                shelf.receiveShadow = true;
+                scene.add(shelf);
+                // small bottles on shelves
+                for (let b = 0; b < 2; b++) {
+                    const bottle = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.12, 0.14, 0.5, 16),
+                        matGlassBlue
+                    );
+                    bottle.position.set(sx * 7 + (b - 0.5) * 0.7, 0.2 + sy * 1.4 + 0.35, -4);
+                    bottle.castShadow = true;
+                    scene.add(bottle);
+                }
+            }
+        }
 
-        const insertedMembrane = steps[9]?.querySelector('#insertedMembrane');
-        if (insertedMembrane) setVisible(insertedMembrane, false);
+        // Main lab bench
+        const benchTop = new THREE.Mesh(new THREE.BoxGeometry(9, 0.2, 5.5), matLabBench);
+        benchTop.position.set(0, 0.6, 0);
+        benchTop.receiveShadow = true;
+        benchTop.castShadow = true;
+        scene.add(benchTop);
 
-        drawEISCharts(0);
-        showStep(1);
-      }
+        const benchLegsGeo = new THREE.BoxGeometry(0.35, 1.2, 0.35);
+        for (let lx = -1; lx <= 1; lx += 2) {
+            for (let lz = -1; lz <= 1; lz += 2) {
+                const leg = new THREE.Mesh(benchLegsGeo, matMetalDark);
+                leg.position.set(lx * 4, -0.1, lz * 2.4);
+                leg.castShadow = true;
+                leg.receiveShadow = true;
+                scene.add(leg);
+            }
+        }
 
-      function advanceStep() {
-        state.currentStep += 1;
-        if (state.currentStep <= 9) showStep(state.currentStep);
-        else finishExperiment();
-      }
+        // Subtle grid lines on the bench (decorative)
+        const gridLineGeo = new THREE.BoxGeometry(8.8, 0.005, 0.04);
+        for (let gz = -2; gz <= 2; gz += 0.8) {
+            const line = new THREE.Mesh(gridLineGeo, new THREE.MeshStandardMaterial({
+                color: '#2a3040',
+                roughness: 0.5,
+                metalness: 0.3,
+                emissive: '#101520',
+                emissiveIntensity: 0.3,
+            }));
+            line.position.set(0, 0.71, gz);
+            scene.add(line);
+        }
 
-      function finishExperiment() {
-        state.complete = true;
-        instructionText.textContent = 'Experimento completado. Los resultados EIS se muestran en los paneles científicos.';
-        finalBadge.style.display = 'block';
-        restartWrap.style.display = 'block';
-        updateDots(9);
-      }
+        // ==================== STATION DATA ====================
+        const stationPositions = [
+            { x: -2.8, z: 1.6, label: 'Pesaje', step: 1 },
+            { x: 0, z: 1.6, label: 'Disolución', step: 2 },
+            { x: 2.8, z: 1.6, label: 'Adición H₃PO₂', step: 3 },
+            { x: -2.8, z: 0, label: 'Agitación 16h', step: 4 },
+            { x: 0, z: 0, label: 'Vertido Petri', step: 5 },
+            { x: 2.8, z: 0, label: 'Secado 24h', step: 6 },
+            { x: -2.8, z: -1.6, label: 'Corte Disco', step: 7 },
+            { x: 0, z: -1.6, label: 'Montaje Celda', step: 8 },
+            { x: 2.8, z: -1.6, label: 'Medición EIS', step: 9 },
+        ];
 
-      function spinElement(target, speed = 0.02) {
-        const spinner = target.querySelector('#stirrer2') || target.querySelector('#stirrer4') || target;
-        state.stirringOn = true;
-        const tick = () => {
-          if (!state.stirringOn) return;
-          spinner.object3D.rotation.y += speed;
-          if (state.vaporOn) {
-            vaporParticles.forEach(p => {
-              p.object3D.position.y += 0.012 + Math.random() * 0.008;
-              p.object3D.position.x += Math.sin(performance.now() * 0.001 + p.__seed) * 0.0015;
-              if (p.object3D.position.y > 1.1) {
-                p.object3D.position.y = 0.17 + Math.random() * 0.18;
-                p.object3D.position.x = p.__x;
-                p.object3D.position.z = p.__z;
-              }
+        // ==================== CREATE STATIONS ====================
+        const stations = [];
+        const clickableObjects = [];
+        const stationGroups = [];
+        const glowRings = [];
+
+        function createGlowRing(x, z) {
+            const ring = new THREE.Mesh(
+                new THREE.TorusGeometry(0.55, 0.04, 16, 32),
+                matGlowRing.clone()
+            );
+            ring.rotation.x = -Math.PI / 2;
+            ring.position.set(x, 0.73, z);
+            ring.visible = false;
+            ring.userData = { baseOpacity: 0.7, pulsePhase: Math.random() * Math.PI * 2 };
+            scene.add(ring);
+            glowRings.push(ring);
+            return ring;
+        }
+
+        // --- Station 1: Analytical Balance + PLA pellets ---
+        function createStation1(x, z) {
+            const group = new THREE.Group();
+            group.position.set(x, 0.7, z);
+
+            // Balance base
+            const base = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.25, 0.5), matMetalBrushed);
+            base.position.y = 0.15;
+            base.castShadow = true;
+            base.receiveShadow = true;
+            group.add(base);
+
+            // Glass enclosure
+            const glassEnclosure = new THREE.Mesh(
+                new THREE.BoxGeometry(0.55, 0.4, 0.38),
+                new THREE.MeshStandardMaterial({
+                    color: '#d0e4f8',
+                    roughness: 0.08,
+                    metalness: 0.03,
+                    transparent: true,
+                    opacity: 0.3,
+                })
+            );
+            glassEnclosure.position.y = 0.45;
+            group.add(glassEnclosure);
+
+            // Platform
+            const platform = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.04, 0.3), matMetalDark);
+            platform.position.y = 0.28;
+            group.add(platform);
+
+            // PLA pellets (small white spheres)
+            const pelletsGroup = new THREE.Group();
+            pelletsGroup.position.y = 0.32;
+            for (let i = 0; i < 8; i++) {
+                const pellet = new THREE.Mesh(new THREE.SphereGeometry(0.04, 12, 8), matPLA);
+                pellet.position.set(
+                    (Math.random() - 0.5) * 0.25,
+                    Math.random() * 0.04,
+                    (Math.random() - 0.5) * 0.18
+                );
+                pellet.castShadow = true;
+                pelletsGroup.add(pellet);
+            }
+            pelletsGroup.name = 'pellets';
+            group.add(pelletsGroup);
+
+            // Clickable: the balance base
+            base.userData = { stationIndex: 0, isClickable: true };
+            clickableObjects.push(base);
+            group.userData = { mainClickable: base, pelletsGroup };
+
+            return group;
+        }
+
+        // --- Station 2: Round-bottom flask + condenser + reflux ---
+        function createStation2(x, z) {
+            const group = new THREE.Group();
+            group.position.set(x, 0.7, z);
+
+            // Magnetic stirrer base
+            const stirrerBase = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.18, 0.5), matMetalDark);
+            stirrerBase.position.y = 0.1;
+            stirrerBase.castShadow = true;
+            stirrerBase.receiveShadow = true;
+            group.add(stirrerBase);
+
+            // Round-bottom flask
+            const flaskSphere = new THREE.Mesh(new THREE.SphereGeometry(0.32, 32, 24), matGlass);
+            flaskSphere.position.y = 0.45;
+            flaskSphere.castShadow = true;
+            group.add(flaskSphere);
+
+            const flaskNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.1, 0.6, 20), matGlass);
+            flaskNeck.position.y = 0.85;
+            group.add(flaskNeck);
+
+            // Condenser (outer)
+            const condenserOuter = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 1.0, 20), matGlass);
+            condenserOuter.position.y = 1.55;
+            group.add(condenserOuter);
+
+            // Condenser inner tube
+            const condenserInner = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.05, 16), matGlassBlue);
+            condenserInner.position.y = 1.55;
+            group.add(condenserInner);
+
+            // Rings on condenser
+            for (let r = 0; r < 4; r++) {
+                const ring = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.025, 8, 20), matMetalBrushed);
+                ring.position.y = 1.1 + r * 0.3;
+                group.add(ring);
+            }
+
+            // Vapor particles (initially hidden)
+            const vaporGroup = new THREE.Group();
+            vaporGroup.position.y = 1.9;
+            vaporGroup.visible = false;
+            for (let v = 0; v < 15; v++) {
+                const particle = new THREE.Mesh(new THREE.SphereGeometry(0.025, 6, 4), new THREE.MeshStandardMaterial({
+                    color: '#e8f4ff',
+                    roughness: 0.3,
+                    transparent: true,
+                    opacity: 0.5,
+                    emissive: '#ffffff',
+                    emissiveIntensity: 0.4,
+                }));
+                particle.position.set((Math.random() - 0.5) * 0.2, Math.random() * 0.6, (Math.random() - 0.5) * 0.2);
+                particle.userData = {
+                    baseY: particle.position.y,
+                    speed: 0.3 + Math.random() * 0.7,
+                    offset: Math.random() * Math.PI * 2,
+                };
+                vaporGroup.add(particle);
+            }
+            vaporGroup.name = 'vaporGroup';
+            group.add(vaporGroup);
+
+            // Stir bar
+            const stirBar = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.03, 0.05), matMetalDark);
+            stirBar.position.y = 0.22;
+            stirBar.name = 'stirBar';
+            group.add(stirBar);
+
+            // Clickable: the flask sphere
+            flaskSphere.userData = { stationIndex: 1, isClickable: true };
+            clickableObjects.push(flaskSphere);
+            group.userData = { mainClickable: flaskSphere, vaporGroup, stirBar, flaskSphere };
+
+            return group;
+        }
+
+        // --- Station 3: Flask + Micropipette + H₃PO₂ droplet ---
+        function createStation3(x, z) {
+            const group = new THREE.Group();
+            group.position.set(x, 0.7, z);
+
+            // Flask with blue solution
+            const flaskSphere = new THREE.Mesh(new THREE.SphereGeometry(0.3, 28, 20), matGlass);
+            flaskSphere.position.y = 0.4;
+            flaskSphere.castShadow = true;
+            group.add(flaskSphere);
+
+            const flaskNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.45, 16), matGlass);
+            flaskNeck.position.y = 0.7;
+            group.add(flaskNeck);
+
+            // Blue solution inside
+            const solution = new THREE.Mesh(new THREE.SphereGeometry(0.23, 20, 14), matSolution);
+            solution.position.y = 0.38;
+            solution.scale.set(0.85, 0.6, 0.85);
+            group.add(solution);
+
+            // Micropipette
+            const pipetteBody = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.55, 12), matMetalBrushed);
+            pipetteBody.position.set(0.25, 0.9, 0);
+            pipetteBody.rotation.z = -0.3;
+            group.add(pipetteBody);
+
+            const pipetteTip = new THREE.Mesh(
+                new THREE.ConeGeometry(0.03, 0.15, 10),
+                matMetalDark
+            );
+            pipetteTip.position.set(0.4, 0.62, 0);
+            pipetteTip.rotation.z = -0.3;
+            group.add(pipetteTip);
+
+            // Amber droplet
+            const droplet = new THREE.Mesh(new THREE.SphereGeometry(0.05, 12, 8), matAmber);
+            droplet.position.set(0.42, 0.68, 0);
+            droplet.name = 'droplet';
+            droplet.visible = false;
+            group.add(droplet);
+
+            // Clickable: micropipette body
+            pipetteBody.userData = { stationIndex: 2, isClickable: true };
+            clickableObjects.push(pipetteBody);
+            group.userData = { mainClickable: pipetteBody, droplet, flaskSphere, solution };
+
+            return group;
+        }
+
+        // --- Station 4: Flask on stirrer (agitation) ---
+        function createStation4(x, z) {
+            const group = new THREE.Group();
+            group.position.set(x, 0.7, z);
+
+            const stirrerBase = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.18, 0.5), matMetalDark);
+            stirrerBase.position.y = 0.1;
+            stirrerBase.castShadow = true;
+            stirrerBase.receiveShadow = true;
+            group.add(stirrerBase);
+
+            const flaskSphere = new THREE.Mesh(new THREE.SphereGeometry(0.3, 28, 20), matGlass);
+            flaskSphere.position.y = 0.42;
+            flaskSphere.castShadow = true;
+            group.add(flaskSphere);
+
+            const flaskNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.09, 0.4, 16), matGlass);
+            flaskNeck.position.y = 0.7;
+            group.add(flaskNeck);
+
+            const solution = new THREE.Mesh(new THREE.SphereGeometry(0.22, 18, 12), matSolution);
+            solution.position.y = 0.4;
+            solution.scale.set(0.8, 0.55, 0.8);
+            group.add(solution);
+
+            const stirBar = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.03, 0.05), matMetalDark);
+            stirBar.position.y = 0.2;
+            stirBar.name = 'stirBar';
+            group.add(stirBar);
+
+            flaskSphere.userData = { stationIndex: 3, isClickable: true };
+            clickableObjects.push(flaskSphere);
+            group.userData = { mainClickable: flaskSphere, stirBar };
+
+            return group;
+        }
+
+        // --- Station 5: Tilted flask + Petri dish ---
+        function createStation5(x, z) {
+            const group = new THREE.Group();
+            group.position.set(x, 0.7, z);
+
+            // Flask (tilted)
+            const flaskGroup = new THREE.Group();
+            flaskGroup.rotation.z = -0.6;
+            flaskGroup.position.set(-0.2, 0.35, 0);
+            const flaskSphere = new THREE.Mesh(new THREE.SphereGeometry(0.26, 24, 16), matGlass);
+            flaskSphere.position.y = 0;
+            flaskGroup.add(flaskSphere);
+            const flaskNeck = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.4, 14), matGlass);
+            flaskNeck.position.y = 0.28;
+            flaskGroup.add(flaskNeck);
+            group.add(flaskGroup);
+
+            // Petri dish
+            const petriDish = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.08, 32), matGlass);
+            petriDish.position.set(0.35, 0.2, 0);
+            petriDish.castShadow = true;
+            group.add(petriDish);
+
+            const petriLiquid = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.03, 32), matSolution);
+            petriLiquid.position.set(0.35, 0.23, 0);
+            petriLiquid.visible = false;
+            petriLiquid.name = 'petriLiquid';
+            group.add(petriLiquid);
+
+            flaskSphere.userData = { stationIndex: 4, isClickable: true };
+            clickableObjects.push(flaskSphere);
+            group.userData = { mainClickable: flaskSphere, petriLiquid, flaskGroup };
+
+            return group;
+        }
+
+        // --- Station 6: Desiccator ---
+        function createStation6(x, z) {
+            const group = new THREE.Group();
+            group.position.set(x, 0.7, z);
+
+            // Desiccator body
+            const desiccatorBody = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.38, 0.6, 32), matGlass);
+            desiccatorBody.position.y = 0.3;
+            desiccatorBody.castShadow = true;
+            group.add(desiccatorBody);
+
+            // Domed lid
+            const lidDome = new THREE.Mesh(
+                new THREE.SphereGeometry(0.36, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2.5),
+                matGlassBlue
+            );
+            lidDome.position.y = 0.58;
+            group.add(lidDome);
+
+            // Desiccant spheres
+            const desiccantGroup = new THREE.Group();
+            desiccantGroup.position.y = 0.15;
+            for (let d = 0; d < 20; d++) {
+                const bead = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.04, 8, 6),
+                    matDesiccantOrange.clone()
+                );
+                bead.position.set(
+                    (Math.random() - 0.5) * 0.5,
+                    Math.random() * 0.15,
+                    (Math.random() - 0.5) * 0.5
+                );
+                bead.userData = { originalMaterial: bead.material, colorPhase: 0 };
+                desiccantGroup.add(bead);
+            }
+            desiccantGroup.name = 'desiccantGroup';
+            group.add(desiccantGroup);
+
+            // Petri inside
+            const innerPetri = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.04, 20), matGlass);
+            innerPetri.position.y = 0.28;
+            group.add(innerPetri);
+
+            // Membrane inside petri
+            const innerMembrane = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.02, 20), matMembrane);
+            innerMembrane.position.y = 0.3;
+            innerMembrane.name = 'innerMembrane';
+            group.add(innerMembrane);
+
+            desiccatorBody.userData = { stationIndex: 5, isClickable: true };
+            clickableObjects.push(desiccatorBody);
+            group.userData = { mainClickable: desiccatorBody, desiccantGroup, innerMembrane };
+
+            return group;
+        }
+
+        // --- Station 7: Membrane disc + Caliper ---
+        function createStation7(x, z) {
+            const group = new THREE.Group();
+            group.position.set(x, 0.7, z);
+
+            // Membrane disc
+            const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.25, 0.04, 32), matMembrane);
+            disc.position.y = 0.22;
+            disc.castShadow = true;
+            disc.name = 'membraneDisc';
+            group.add(disc);
+
+            // Caliper
+            const caliperJaw1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.5), matMetalBrushed);
+            caliperJaw1.position.set(-0.28, 0.25, 0);
+            caliperJaw1.castShadow = true;
+            group.add(caliperJaw1);
+
+            const caliperJaw2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.1, 0.5), matMetalBrushed);
+            caliperJaw2.position.set(0.28, 0.25, 0);
+            caliperJaw2.castShadow = true;
+            group.add(caliperJaw2);
+
+            const caliperBody = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.06, 0.12), matMetalDark);
+            caliperBody.position.set(0, 0.32, 0.22);
+            group.add(caliperBody);
+
+            disc.userData = { stationIndex: 6, isClickable: true };
+            clickableObjects.push(disc);
+            group.userData = { mainClickable: disc, disc };
+
+            return group;
+        }
+
+        // --- Station 8: EIS Cell assembly ---
+        function createStation8(x, z) {
+            const group = new THREE.Group();
+            group.position.set(x, 0.7, z);
+
+            // Cell body (cubic)
+            const cellBody = new THREE.Mesh(
+                new THREE.BoxGeometry(0.5, 0.4, 0.5),
+                new THREE.MeshStandardMaterial({
+                    color: '#c8ddf8',
+                    roughness: 0.1,
+                    metalness: 0.04,
+                    transparent: true,
+                    opacity: 0.35,
+                })
+            );
+            cellBody.position.y = 0.25;
+            cellBody.castShadow = true;
+            group.add(cellBody);
+
+            // Electrodes
+            const electrodeGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.5, 12);
+            const electrodeMat = new THREE.MeshStandardMaterial({ color: '#8899aa', roughness: 0.3, metalness: 0.7 });
+
+            const we = new THREE.Mesh(electrodeGeo, electrodeMat);
+            we.position.set(0, 0.55, 0);
+            we.name = 'workingElectrode';
+            group.add(we);
+
+            const re = new THREE.Mesh(electrodeGeo, electrodeMat);
+            re.position.set(-0.15, 0.5, 0.12);
+            re.name = 'referenceElectrode';
+            group.add(re);
+
+            const ce = new THREE.Mesh(electrodeGeo, electrodeMat);
+            ce.position.set(0.15, 0.5, -0.12);
+            ce.name = 'counterElectrode';
+            group.add(ce);
+
+            // Membrane placeholder inside
+            const membraneInside = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.025, 20), matMembrane);
+            membraneInside.position.y = 0.28;
+            membraneInside.name = 'membraneInside';
+            membraneInside.visible = false;
+            group.add(membraneInside);
+
+            cellBody.userData = { stationIndex: 7, isClickable: true };
+            clickableObjects.push(cellBody);
+            group.userData = { mainClickable: cellBody, membraneInside, we, re, ce };
+
+            return group;
+        }
+
+        // --- Station 9: EIS Cell with measurement displays ---
+        function createStation9(x, z) {
+            const group = new THREE.Group();
+            group.position.set(x, 0.7, z);
+
+            // Cell body
+            const cellBody = new THREE.Mesh(
+                new THREE.BoxGeometry(0.5, 0.4, 0.5),
+                new THREE.MeshStandardMaterial({
+                    color: '#c8ddf8',
+                    roughness: 0.1,
+                    metalness: 0.04,
+                    transparent: true,
+                    opacity: 0.35,
+                })
+            );
+            cellBody.position.y = 0.25;
+            cellBody.castShadow = true;
+            group.add(cellBody);
+
+            const electrodeGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.5, 12);
+            const electrodeMat = new THREE.MeshStandardMaterial({ color: '#8899aa', roughness: 0.3, metalness: 0.7 });
+            const we = new THREE.Mesh(electrodeGeo, electrodeMat);
+            we.position.set(0, 0.55, 0);
+            group.add(we);
+            const re = new THREE.Mesh(electrodeGeo, electrodeMat);
+            re.position.set(-0.15, 0.5, 0.12);
+            group.add(re);
+            const ce = new THREE.Mesh(electrodeGeo, electrodeMat);
+            ce.position.set(0.15, 0.5, -0.12);
+            group.add(ce);
+
+            const membraneInside = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.025, 20), matMembrane);
+            membraneInside.position.y = 0.28;
+            membraneInside.name = 'membraneInside';
+            group.add(membraneInside);
+
+            // Floating display panels
+            const displayGeo = new THREE.PlaneGeometry(0.65, 0.45);
+            const displayMat = new THREE.MeshStandardMaterial({
+                color: '#0a1620',
+                roughness: 0.2,
+                metalness: 0.2,
+                emissive: '#0a1a2a',
+                emissiveIntensity: 0.6,
             });
-          }
-          state.spinRAF = requestAnimationFrame(tick);
-        };
-        cancelAnimationFrame(state.spinRAF);
-        tick();
-      }
+            const display1 = new THREE.Mesh(displayGeo, displayMat);
+            display1.position.set(0.55, 0.65, 0.35);
+            display1.rotation.y = -0.35;
+            display1.name = 'displayNyquist';
+            group.add(display1);
 
-      function animateDrop(drop, done) {
-        if (state.dropTimer) clearInterval(state.dropTimer);
-        let y = 0.42;
-        state.dropTimer = setInterval(() => {
-          y -= 0.012;
-          drop.setAttribute('position', `0.50 ${y.toFixed(3)} 0.06`);
-          if (y <= 0.15) {
-            clearInterval(state.dropTimer);
-            state.dropTimer = 0;
-            if (done) done();
-          }
-        }, 50);
-      }
+            const display2 = new THREE.Mesh(displayGeo, displayMat);
+            display2.position.set(-0.55, 0.65, 0.35);
+            display2.rotation.y = 0.35;
+            display2.name = 'displayBode';
+            group.add(display2);
 
-      function animateDrying() {
-        if (state.dryingTimer) clearInterval(state.dryingTimer);
-        state.dryingOn = true;
-        let p = 0;
-        state.dryingTimer = setInterval(() => {
-          p = Math.min(1, p + 0.018);
-          silicaParticles.forEach((sphere, idx) => {
-            const mesh = sphere.getObject3D('mesh');
-            if (!mesh || !mesh.material) return;
-            const local = Math.min(1, p + idx * 0.008);
-            const r = Math.round(255 + (138 - 255) * local);
-            const g = Math.round(140 + (43 - 140) * local);
-            const b = Math.round(0 + (226 - 0) * local);
-            mesh.material.color.set(`rgb(${r},${g},${b})`);
-          });
-          if (p >= 1) {
-            clearInterval(state.dryingTimer);
-            state.dryingTimer = 0;
-            state.dryingOn = false;
-            advanceStep();
-          }
-        }, 120);
-      }
+            cellBody.userData = { stationIndex: 8, isClickable: true };
+            clickableObjects.push(cellBody);
+            group.userData = { mainClickable: cellBody, membraneInside, display1, display2, we, re, ce };
 
-      function updateCanvasTexture(planeEl) {
-        if (!planeEl) return;
-        const mesh = planeEl.getObject3D('mesh');
-        if (mesh && mesh.material && mesh.material.map) {
-          mesh.material.map.needsUpdate = true;
-          mesh.material.needsUpdate = true;
-        }
-      }
-
-      function animateEISMeasurement(nyquistPlane, bodePlane) {
-        if (state.measureTimer) clearInterval(state.measureTimer);
-        state.measureProgress = 0;
-        state.measureTimer = setInterval(() => {
-          state.measureProgress = Math.min(1, state.measureProgress + 0.02);
-          drawEISCharts(state.measureProgress);
-          updateCanvasTexture(nyquistPlane);
-          updateCanvasTexture(bodePlane);
-          if (state.measureProgress >= 1) {
-            clearInterval(state.measureTimer);
-            state.measureTimer = 0;
-            advanceStep();
-          }
-        }, 100);
-      }
-
-      function drawAxes(ctx, w, h, pad) {
-        ctx.clearRect(0, 0, w, h);
-        ctx.fillStyle = '#081018';
-        ctx.fillRect(0, 0, w, h);
-        const grd = ctx.createLinearGradient(0, 0, w, h);
-        grd.addColorStop(0, 'rgba(107,213,255,0.08)');
-        grd.addColorStop(1, 'rgba(157,255,191,0.08)');
-        ctx.fillStyle = grd;
-        ctx.fillRect(0, 0, w, h);
-        ctx.strokeStyle = 'rgba(234,244,255,0.16)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.rect(pad, pad * 0.55, w - pad * 1.3, h - pad * 1.1);
-        ctx.stroke();
-      }
-
-      function drawNyquist(progress) {
-        const ctx = nyquistCtx;
-        const w = nyquistCanvas.width;
-        const h = nyquistCanvas.height;
-        const pad = 54;
-        drawAxes(ctx, w, h, pad);
-
-        const pts = [];
-        for (let i = 0; i < model.points; i++) {
-          const f = model.fMin * Math.pow(model.fMax / model.fMin, i / (model.points - 1));
-          const omega = 2 * Math.PI * f;
-          const x = omega * model.Rct * model.Cdl;
-          const zr = model.Rs + model.Rct / (1 + x * x);
-          const zi = -(model.Rct * omega * model.Rct * model.Cdl) / (1 + x * x);
-          pts.push({ zr, zi });
+            return group;
         }
 
-        const n = Math.max(2, Math.floor(progress * pts.length));
-        const slice = pts.slice(0, n);
-        const minX = Math.min(...pts.map(p => p.zr)) - 2;
-        const maxX = Math.max(...pts.map(p => p.zr)) + 2;
-        const maxY = Math.max(...pts.map(p => -p.zi)) * 1.1 + 1;
-        const plotW = w - pad * 1.45;
-        const plotH = h - pad * 1.05;
-        const x0 = pad;
-        const y0 = h - pad * 0.55;
-        const mapX = v => x0 + ((v - minX) / (maxX - minX)) * plotW;
-        const mapY = v => y0 - (v / maxY) * plotH;
-
-        ctx.strokeStyle = 'rgba(234,244,255,0.52)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(x0, y0);
-        ctx.lineTo(x0 + plotW, y0);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(x0, y0);
-        ctx.lineTo(x0, y0 - plotH);
-        ctx.stroke();
-
-        ctx.fillStyle = 'rgba(234,244,255,0.84)';
-        ctx.font = '18px Segoe UI, Roboto, system-ui';
-        ctx.fillText("Z' (Ω)", w - 88, h - 16);
-        ctx.save();
-        ctx.translate(12, 34);
-        ctx.rotate(-Math.PI / 2);
-        ctx.fillText("-Z'' (Ω)", 0, 0);
-        ctx.restore();
-
-        ctx.strokeStyle = 'rgba(107,213,255,0.96)';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        slice.forEach((p, i) => {
-          const px = mapX(p.zr);
-          const py = mapY(-p.zi);
-          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        // Instantiate all stations
+        stationPositions.forEach((sp, index) => {
+            let group;
+            switch (index) {
+                case 0:
+                    group = createStation1(sp.x, sp.z);
+                    break;
+                case 1:
+                    group = createStation2(sp.x, sp.z);
+                    break;
+                case 2:
+                    group = createStation3(sp.x, sp.z);
+                    break;
+                case 3:
+                    group = createStation4(sp.x, sp.z);
+                    break;
+                case 4:
+                    group = createStation5(sp.x, sp.z);
+                    break;
+                case 5:
+                    group = createStation6(sp.x, sp.z);
+                    break;
+                case 6:
+                    group = createStation7(sp.x, sp.z);
+                    break;
+                case 7:
+                    group = createStation8(sp.x, sp.z);
+                    break;
+                case 8:
+                    group = createStation9(sp.x, sp.z);
+                    break;
+            }
+            group.userData.stationIndex = index;
+            group.userData.positionXZ = { x: sp.x, z: sp.z };
+            scene.add(group);
+            stationGroups.push(group);
+            const ring = createGlowRing(sp.x, sp.z);
+            ring.userData.stationIndex = index;
+            stations.push({
+                group,
+                ring,
+                step: sp.step,
+                label: sp.label,
+                completed: false,
+                active: false,
+            });
         });
-        ctx.stroke();
 
-        ctx.fillStyle = '#9dffbf';
-        slice.forEach((p, i) => {
-          if (i % 8 === 0 || i === slice.length - 1) {
-            const px = mapX(p.zr);
-            const py = mapY(-p.zi);
+        // ==================== STATE MANAGEMENT ====================
+        let currentStep = 0; // 0-indexed (0-8)
+        let stepStates = new Array(9).fill('pending'); // 'pending' | 'active' | 'animating' | 'completed'
+        let isTransitioning = false;
+        let measurementProgress = 0;
+        let isMeasuring = false;
+        let allCompleted = false;
+        stepStates[0] = 'active';
+
+        // Highlight first station
+        stations[0].ring.visible = true;
+        stations[0].ring.material.emissiveIntensity = 1.2;
+
+        // ==================== EIS DATA GENERATION ====================
+        const Rs = 10.2;
+        const Rct = 48.7;
+        const Cdl = 12.5e-6; // 12.5 µF
+        const numEISPoints = 200;
+        const freqMin = 0.01;
+        const freqMax = 100000;
+        const eisData = [];
+
+        for (let i = 0; i < numEISPoints; i++) {
+            const logF = Math.log10(freqMin) + (i / (numEISPoints - 1)) * (Math.log10(freqMax) - Math.log10(freqMin));
+            const f = Math.pow(10, logF);
+            const omega = 2 * Math.PI * f;
+            const denom = 1 + Math.pow(omega * Rct * Cdl, 2);
+            const Zr = Rs + Rct / denom;
+            const Zi = -(Rct * Rct * omega * Cdl) / denom;
+            const Zmag = Math.sqrt(Zr * Zr + Zi * Zi);
+            const phase = Math.atan2(Zi, Zr) * (180 / Math.PI);
+            eisData.push({ f, omega, Zr, Zi, Zmag, phase, logF });
+        }
+
+        // ==================== GRAPH DRAWING ====================
+        function resizeGraphCanvases() {
+            const dpr = Math.min(window.devicePixelRatio, 2);
+            const nyquistRect = nyquistCanvas.parentElement.getBoundingClientRect();
+            const bodeRect = bodeCanvas.parentElement.getBoundingClientRect();
+            const nw = nyquistRect.width - 2;
+            const bw = bodeRect.width - 2;
+            nyquistCanvas.width = nw * dpr;
+            nyquistCanvas.height = 150 * dpr;
+            nyquistCanvas.style.width = nw + 'px';
+            nyquistCanvas.style.height = '150px';
+            bodeCanvas.width = bw * dpr;
+            bodeCanvas.height = 150 * dpr;
+            bodeCanvas.style.width = bw + 'px';
+            bodeCanvas.style.height = '150px';
+            nyquistCtx.setTransform(1, 0, 0, 1, 0, 0);
+            nyquistCtx.scale(dpr, dpr);
+            bodeCtx.setTransform(1, 0, 0, 1, 0, 0);
+            bodeCtx.scale(dpr, dpr);
+        }
+
+        function drawNyquistPlot(progress = 1) {
+            const ctx = nyquistCtx;
+            const w = nyquistCanvas.width / (Math.min(window.devicePixelRatio, 2));
+            const h = nyquistCanvas.height / (Math.min(window.devicePixelRatio, 2));
+            ctx.clearRect(0, 0, w, h);
+
+            const margin = { top: 20, right: 25, bottom: 30, left: 40 };
+            const pw = w - margin.left - margin.right;
+            const ph = h - margin.top - margin.bottom;
+
+            // Background
+            ctx.fillStyle = '#080f18';
+            ctx.fillRect(0, 0, w, h);
+
+            // Grid
+            ctx.strokeStyle = '#1a2a3a';
+            ctx.lineWidth = 0.5;
+            for (let i = 0; i <= 5; i++) {
+                const gx = margin.left + (i / 5) * pw;
+                const gy = margin.top + (i / 5) * ph;
+                ctx.beginPath();
+                ctx.moveTo(gx, margin.top);
+                ctx.lineTo(gx, margin.top + ph);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(margin.left, gy);
+                ctx.lineTo(margin.left + pw, gy);
+                ctx.stroke();
+            }
+
+            // Axes
+            ctx.strokeStyle = '#556678';
+            ctx.lineWidth = 1.2;
             ctx.beginPath();
-            ctx.arc(px, py, 3.2, 0, Math.PI * 2);
-            ctx.fill();
-          }
+            ctx.moveTo(margin.left, margin.top + ph);
+            ctx.lineTo(margin.left + pw, margin.top + ph);
+            ctx.lineTo(margin.left + pw - 8, margin.top + ph - 5);
+            ctx.moveTo(margin.left + pw, margin.top + ph);
+            ctx.lineTo(margin.left + pw - 8, margin.top + ph + 5);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(margin.left, margin.top + ph);
+            ctx.lineTo(margin.left, margin.top);
+            ctx.lineTo(margin.left - 5, margin.top + 8);
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left + 5, margin.top + 8);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = '#8899aa';
+            ctx.font = '10px system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText("Z' (Ω)", margin.left + pw / 2, margin.top + ph + 22);
+            ctx.save();
+            ctx.translate(margin.left - 32, margin.top + ph / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText("−Z'' (Ω)", 0, 0);
+            ctx.restore();
+
+            // Data range
+            const zrMin = Rs - 2;
+            const zrMax = Rs + Rct + 8;
+            const ziMax = Rct / 2 + 5;
+
+            function toX(zr) { return margin.left + ((zr - zrMin) / (zrMax - zrMin)) * pw; }
+
+            function toY(zi) { return margin.top + ph - (zi / ziMax) * ph; }
+
+            // Draw points
+            const pointsToDraw = Math.floor(progress * numEISPoints);
+            if (pointsToDraw > 1) {
+                ctx.strokeStyle = '#00d4ff';
+                ctx.lineWidth = 2;
+                ctx.shadowColor = '#00d4ff';
+                ctx.shadowBlur = 6;
+                ctx.beginPath();
+                let firstPoint = true;
+                for (let i = 0; i < pointsToDraw; i++) {
+                    const pt = eisData[i];
+                    const sx = toX(pt.Zr);
+                    const sy = toY(-pt.Zi);
+                    if (firstPoint) {
+                        ctx.moveTo(sx, sy);
+                        firstPoint = false;
+                    } else {
+                        ctx.lineTo(sx, sy);
+                    }
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+
+                // Highlight last point
+                if (pointsToDraw > 0) {
+                    const last = eisData[pointsToDraw - 1];
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowColor = '#00d4ff';
+                    ctx.shadowBlur = 10;
+                    ctx.beginPath();
+                    ctx.arc(toX(last.Zr), toY(-last.Zi), 4, 0, Math.PI * 2);
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            }
+
+            // Tick labels
+            ctx.fillStyle = '#667788';
+            ctx.font = '8px system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            for (let t = 0; t <= 4; t++) {
+                const val = zrMin + (t / 4) * (zrMax - zrMin);
+                ctx.fillText(val.toFixed(0), toX(val), margin.top + ph + 14);
+            }
+            ctx.textAlign = 'right';
+            for (let t = 0; t <= 4; t++) {
+                const val = (t / 4) * ziMax;
+                ctx.fillText(val.toFixed(0), margin.left - 6, toY(val) + 3);
+            }
+
+            // Rs marker
+            ctx.fillStyle = '#f59e0b';
+            ctx.font = '9px system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            const rsX = toX(Rs);
+            ctx.fillText('Rs', rsX, margin.top + ph + 26);
+            ctx.beginPath();
+            ctx.setLineDash([3, 3]);
+            ctx.strokeStyle = '#f59e0b44';
+            ctx.lineWidth = 1;
+            ctx.moveTo(rsX, margin.top);
+            ctx.lineTo(rsX, margin.top + ph);
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        function drawBodePlot(progress = 1) {
+            const ctx = bodeCtx;
+            const w = bodeCanvas.width / (Math.min(window.devicePixelRatio, 2));
+            const h = bodeCanvas.height / (Math.min(window.devicePixelRatio, 2));
+            ctx.clearRect(0, 0, w, h);
+
+            const margin = { top: 15, right: 30, bottom: 22, left: 42 };
+            const totalH = h - margin.top - margin.bottom;
+            const magH = totalH * 0.52;
+            const phaseH = totalH * 0.48;
+            const pw = w - margin.left - margin.right;
+
+            ctx.fillStyle = '#080f18';
+            ctx.fillRect(0, 0, w, h);
+
+            // Divider
+            const dividerY = margin.top + magH;
+            ctx.strokeStyle = '#1a2a3a';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(margin.left, dividerY);
+            ctx.lineTo(margin.left + pw, dividerY);
+            ctx.stroke();
+
+            // Grids
+            ctx.strokeStyle = '#1a2a3a';
+            ctx.lineWidth = 0.4;
+            for (let i = 0; i <= 5; i++) {
+                const gx = margin.left + (i / 5) * pw;
+                ctx.beginPath();
+                ctx.moveTo(gx, margin.top);
+                ctx.lineTo(gx, dividerY);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(gx, dividerY + 2);
+                ctx.lineTo(gx, dividerY + 2 + phaseH);
+                ctx.stroke();
+            }
+            for (let i = 0; i <= 3; i++) {
+                const gyMag = margin.top + (i / 3) * magH;
+                ctx.beginPath();
+                ctx.moveTo(margin.left, gyMag);
+                ctx.lineTo(margin.left + pw, gyMag);
+                ctx.stroke();
+                const gyPhase = dividerY + 2 + (i / 3) * phaseH;
+                ctx.beginPath();
+                ctx.moveTo(margin.left, gyPhase);
+                ctx.lineTo(margin.left + pw, gyPhase);
+                ctx.stroke();
+            }
+
+            const logFmin = Math.log10(freqMin);
+            const logFmax = Math.log10(freqMax);
+
+            function toX(logF) { return margin.left + ((logF - logFmin) / (logFmax - logFmin)) * pw; }
+
+            function toYMag(zmag) {
+                const logZ = Math.log10(zmag);
+                const logZmin = Math.log10(8);
+                const logZmax = Math.log10(70);
+                return margin.top + magH - ((logZ - logZmin) / (logZmax - logZmin)) * magH;
+            }
+
+            function toYPhase(ph) {
+                const phMin = -55;
+                const phMax = 5;
+                return dividerY + 2 + phaseH - ((ph - phMin) / (phMax - phMin)) * phaseH;
+            }
+
+            const pointsToDraw = Math.floor(progress * numEISPoints);
+
+            // Magnitude curve
+            if (pointsToDraw > 1) {
+                ctx.strokeStyle = '#4adec0';
+                ctx.lineWidth = 2;
+                ctx.shadowColor = '#4adec0';
+                ctx.shadowBlur = 4;
+                ctx.beginPath();
+                let first = true;
+                for (let i = 0; i < pointsToDraw; i++) {
+                    const pt = eisData[i];
+                    const sx = toX(pt.logF);
+                    const sy = toYMag(pt.Zmag);
+                    if (first) { ctx.moveTo(sx, sy);
+                        first = false; } else ctx.lineTo(sx, sy);
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+
+            // Phase curve
+            if (pointsToDraw > 1) {
+                ctx.strokeStyle = '#a78bfa';
+                ctx.lineWidth = 1.8;
+                ctx.shadowColor = '#a78bfa';
+                ctx.shadowBlur = 4;
+                ctx.beginPath();
+                let first = true;
+                for (let i = 0; i < pointsToDraw; i++) {
+                    const pt = eisData[i];
+                    const sx = toX(pt.logF);
+                    const sy = toYPhase(pt.phase);
+                    if (first) { ctx.moveTo(sx, sy);
+                        first = false; } else ctx.lineTo(sx, sy);
+                }
+                ctx.stroke();
+                ctx.shadowBlur = 0;
+            }
+
+            // Labels
+            ctx.fillStyle = '#8899aa';
+            ctx.font = '9px system-ui, sans-serif';
+            ctx.textAlign = 'center';
+            const freqs = [0.01, 0.1, 1, 10, 100, 1000, 10000, 100000];
+            freqs.forEach(f => {
+                const lx = toX(Math.log10(f));
+                ctx.fillText(f >= 1000 ? (f / 1000) + 'k' : f, lx, h - 3);
+            });
+            ctx.fillText('f (Hz)', margin.left + pw / 2, h - 3);
+
+            ctx.save();
+            ctx.fillStyle = '#4adec0';
+            ctx.font = '8px system-ui, sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText('log|Z|', margin.left - 4, margin.top + 10);
+            ctx.fillText('(Ω)', margin.left - 4, margin.top + 20);
+            ctx.restore();
+
+            ctx.save();
+            ctx.fillStyle = '#a78bfa';
+            ctx.font = '8px system-ui, sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText('Fase', margin.left - 4, dividerY + 14);
+            ctx.fillText('(°)', margin.left - 4, dividerY + 24);
+            ctx.restore();
+        }
+
+        function updateAllGraphs(progress) {
+            drawNyquistPlot(progress);
+            drawBodePlot(progress);
+        }
+
+        // ==================== CAMERA ANIMATION ====================
+        let cameraTargetPos = new THREE.Vector3(0, 0.5, 0);
+        let cameraTargetLook = new THREE.Vector3(0, 0.5, 0);
+        let isCameraAnimating = false;
+
+        function animateCameraToStation(stationIndex) {
+            const sp = stationPositions[stationIndex];
+            cameraTargetLook.set(sp.x, 0.55, sp.z);
+            const offsetX = 0;
+            const offsetY = 2.8;
+            const offsetZ = 3.2;
+            cameraTargetPos.set(sp.x + offsetX, sp.z > 0 ? offsetY + 0.5 : offsetY, sp.z + offsetZ);
+            isCameraAnimating = true;
+        }
+
+        // ==================== RAYCASTER ====================
+        const raycaster = new THREE.Raycaster();
+        raycaster.far = 8;
+        const mouse = new THREE.Vector2();
+
+        function getIntersections(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+            raycaster.setFromCamera(mouse, camera);
+            return raycaster.intersectObjects(clickableObjects, false);
+        }
+
+        function handleClick(event) {
+            if (isTransitioning || allCompleted) return;
+            if (isMeasuring) return;
+
+            const intersections = getIntersections(event);
+            if (intersections.length > 0) {
+                const obj = intersections[0].object;
+                if (obj.userData && obj.userData.isClickable && obj.userData.stationIndex === currentStep) {
+                    advanceStep();
+                }
+            }
+        }
+
+        function handleTouch(event) {
+            if (isTransitioning || allCompleted) return;
+            if (isMeasuring) return;
+            if (event.touches.length === 1) {
+                const touch = event.touches[0];
+                const fakeEvent = { clientX: touch.clientX, clientY: touch.clientY };
+                const intersections = getIntersections(fakeEvent);
+                if (intersections.length > 0) {
+                    const obj = intersections[0].object;
+                    if (obj.userData && obj.userData.isClickable && obj.userData.stationIndex === currentStep) {
+                        advanceStep();
+                    }
+                }
+            }
+        }
+
+        // ==================== STEP ADVANCEMENT ====================
+        function advanceStep() {
+            if (isTransitioning || allCompleted) return;
+            isTransitioning = true;
+
+            const prevStation = stations[currentStep];
+            prevStation.completed = true;
+            prevStation.active = false;
+            prevStation.ring.material.emissiveIntensity = 0.35;
+            prevStation.ring.material.color.set('#4adec0');
+            prevStation.ring.material.emissive.set('#4adec0');
+            prevStation.ring.visible = true;
+            stepStates[currentStep] = 'completed';
+
+            // Special handling for step 9
+            if (currentStep === 8) {
+                startEISMeasurement();
+                return;
+            }
+
+            currentStep++;
+            if (currentStep >= 9) {
+                finishAllSteps();
+                return;
+            }
+
+            stepStates[currentStep] = 'active';
+            const nextStation = stations[currentStep];
+            nextStation.active = true;
+            nextStation.ring.visible = true;
+            nextStation.ring.material.emissiveIntensity = 1.2;
+            nextStation.ring.material.color.set('#00d4ff');
+            nextStation.ring.material.emissive.set('#00d4ff');
+
+            animateCameraToStation(currentStep);
+            updateUI();
+            playStationAnimation(currentStep - 1);
+
+            setTimeout(() => {
+                isTransitioning = false;
+            }, 900);
+        }
+
+        function startEISMeasurement() {
+            isMeasuring = true;
+            isTransitioning = true;
+            measurementProgress = 0;
+            stepStates[8] = 'animating';
+            updateUI();
+            graphsContainer.classList.add('visible');
+            paramsText.classList.add('visible');
+            resizeGraphCanvases();
+            updateAllGraphs(0);
+
+            const measurementDuration = 6000; // 6 seconds
+            const startTime = performance.now();
+
+            function animateMeasurement(now) {
+                const elapsed = now - startTime;
+                measurementProgress = Math.min(elapsed / measurementDuration, 1);
+                updateAllGraphs(measurementProgress);
+
+                if (measurementProgress < 1) {
+                    requestAnimationFrame(animateMeasurement);
+                } else {
+                    finishMeasurement();
+                }
+            }
+            requestAnimationFrame(animateMeasurement);
+        }
+
+        function finishMeasurement() {
+            isMeasuring = false;
+            isTransitioning = false;
+            stepStates[8] = 'completed';
+            stations[8].completed = true;
+            stations[8].active = false;
+            stations[8].ring.material.emissiveIntensity = 0.35;
+            stations[8].ring.material.color.set('#4adec0');
+            stations[8].ring.material.emissive.set('#4adec0');
+            stations[8].ring.visible = true;
+            updateAllGraphs(1);
+            allCompleted = true;
+            updateUI();
+            btnReset.classList.add('visible');
+            uiPanel.classList.add('completed-all');
+            stepBadge.textContent = '✓ Completado';
+            stepBadge.classList.add('completed');
+            stepInstruction.textContent = '🎉 Experimento finalizado. Observa los resultados EIS.';
+        }
+
+        function finishAllSteps() {
+            allCompleted = true;
+            isTransitioning = false;
+            updateUI();
+            btnReset.classList.add('visible');
+            uiPanel.classList.add('completed-all');
+            stepBadge.textContent = '✓ Completado';
+            stepBadge.classList.add('completed');
+            stepInstruction.textContent = '🎉 Todos los pasos completados.';
+            graphsContainer.classList.add('visible');
+            paramsText.classList.add('visible');
+            resizeGraphCanvases();
+            updateAllGraphs(1);
+        }
+
+        function playStationAnimation(stationIndex) {
+            const group = stationGroups[stationIndex];
+            const ud = group.userData;
+
+            switch (stationIndex) {
+                case 0: // Pellets disappear
+                    if (ud.pelletsGroup) {
+                        ud.pelletsGroup.scale.set(0.01, 0.01, 0.01);
+                        setTimeout(() => { ud.pelletsGroup.scale.set(0, 0, 0); }, 400);
+                    }
+                    break;
+                case 1: // Vapor appears, stirrer spins
+                    if (ud.vaporGroup) ud.vaporGroup.visible = true;
+                    break;
+                case 2: // Droplet appears
+                    if (ud.droplet) {
+                        ud.droplet.visible = true;
+                        ud.droplet.position.set(0.42, 0.68, 0);
+                    }
+                    break;
+                case 3: // Stirrer spins faster
+                    break;
+                case 4: // Liquid appears in Petri
+                    if (ud.petriLiquid) ud.petriLiquid.visible = true;
+                    break;
+                case 5: // Desiccant color change
+                    if (ud.desiccantGroup) {
+                        ud.desiccantGroup.children.forEach(bead => {
+                            bead.userData.colorPhase = 1;
+                        });
+                    }
+                    break;
+                case 6: // Disc cut effect
+                    if (ud.disc) {
+                        ud.disc.scale.set(0.9, 1, 0.9);
+                    }
+                    break;
+                case 7: // Membrane inserted
+                    if (ud.membraneInside) ud.membraneInside.visible = true;
+                    break;
+            }
+        }
+
+        function resetExperience() {
+            currentStep = 0;
+            stepStates = new Array(9).fill('pending');
+            stepStates[0] = 'active';
+            isTransitioning = false;
+            measurementProgress = 0;
+            isMeasuring = false;
+            allCompleted = false;
+
+            stations.forEach((st, i) => {
+                st.completed = false;
+                st.active = i === 0;
+                st.ring.visible = i === 0;
+                st.ring.material.emissiveIntensity = i === 0 ? 1.2 : 0.35;
+                st.ring.material.color.set(i === 0 ? '#00d4ff' : '#4adec0');
+                st.ring.material.emissive.set(i === 0 ? '#00d4ff' : '#4adec0');
+            });
+
+            // Reset station visuals
+            const sg0 = stationGroups[0].userData;
+            if (sg0.pelletsGroup) { sg0.pelletsGroup.scale.set(1, 1, 1); }
+            const sg1 = stationGroups[1].userData;
+            if (sg1.vaporGroup) sg1.vaporGroup.visible = false;
+            const sg2 = stationGroups[2].userData;
+            if (sg2.droplet) { sg2.droplet.visible = false;
+                sg2.droplet.position.set(0.42, 0.68, 0); }
+            const sg4 = stationGroups[4].userData;
+            if (sg4.petriLiquid) sg4.petriLiquid.visible = false;
+            const sg5 = stationGroups[5].userData;
+            if (sg5.desiccantGroup) {
+                sg5.desiccantGroup.children.forEach(bead => {
+                    bead.userData.colorPhase = 0;
+                    bead.material.color.set('#f97316');
+                    bead.material.emissive.set('#2a1000');
+                });
+            }
+            const sg6 = stationGroups[6].userData;
+            if (sg6.disc) { sg6.disc.scale.set(1, 1, 1); }
+            const sg7 = stationGroups[7].userData;
+            if (sg7.membraneInside) sg7.membraneInside.visible = false;
+
+            graphsContainer.classList.remove('visible');
+            paramsText.classList.remove('visible');
+            btnReset.classList.remove('visible');
+            uiPanel.classList.remove('completed-all');
+            stepBadge.classList.remove('completed');
+            updateAllGraphs(0);
+
+            animateCameraToStation(0);
+            updateUI();
+            stepInstruction.textContent = '🖱️ Haz clic sobre la balanza para iniciar';
+        }
+
+        function updateUI() {
+            const step = currentStep + 1;
+            stepBadge.textContent = `Paso ${Math.min(step, 9)} de 9`;
+            stepBadge.classList.remove('completed');
+            progressBarInner.style.width = `${(currentStep / 9) * 100}%`;
+            progressText.textContent = `${currentStep}/9`;
+
+            const descriptions = [
+                'Pesar 1 g de PLA en balanza analítica',
+                'Disolver con calor y reflujo — matraz esférico',
+                'Añadir ácido hipofosforoso (H₃PO₂) gota a gota',
+                'Agitar durante 16 h para homogeneización',
+                'Verter la solución en placa Petri',
+                'Secar durante 24 h en desecador',
+                'Cortar el disco de membrana con precisión',
+                'Montar la muestra en la celda EIS',
+                'Iniciar la medición EIS — Espectroscopía de Impedancia',
+            ];
+
+            const instructions = [
+                '🖱️ Haz clic sobre la balanza para iniciar',
+                '🖱️ Haz clic sobre el matraz para disolver',
+                '🖱️ Haz clic sobre la micropipeta para añadir',
+                '🖱️ Haz clic sobre el matraz para agitar',
+                '🖱️ Haz clic sobre el matraz para verter',
+                '🖱️ Haz clic sobre el desecador para secar',
+                '🖱️ Haz clic sobre el disco de membrana para cortar',
+                '🖱️ Haz clic sobre la celda para montar',
+                '🖱️ Haz clic sobre la celda para medir',
+            ];
+
+            const idx = Math.min(currentStep, 8);
+            stepDescription.textContent = descriptions[idx];
+            if (!allCompleted && !isMeasuring) {
+                stepInstruction.textContent = instructions[idx];
+            }
+        }
+
+        // ==================== EVENT LISTENERS ====================
+        canvas3D.addEventListener('click', handleClick);
+        canvas3D.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            handleTouch(e);
+        }, { passive: false });
+        btnReset.addEventListener('click', resetExperience);
+
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            resizeGraphCanvases();
+            if (graphsContainer.classList.contains('visible')) {
+                updateAllGraphs(measurementProgress || 1);
+            }
         });
 
-        const last = slice[slice.length - 1] || pts[0];
-        ctx.fillStyle = '#eaf4ff';
-        ctx.font = '16px Segoe UI, Roboto, system-ui';
-        ctx.fillText(`p = ${(progress * 100).toFixed(0)}%`, w - 106, 28);
-        ctx.fillText(`Z' = ${last.zr.toFixed(2)} Ω`, 18, 22);
-        ctx.fillText(`-Z'' = ${(-last.zi).toFixed(2)} Ω`, 18, 42);
-      }
-
-      function drawBode(progress) {
-        const ctx = bodeCtx;
-        const w = bodeCanvas.width;
-        const h = bodeCanvas.height;
-        const pad = 34;
-        drawAxes(ctx, w, h, pad);
-
-        const pts = [];
-        for (let i = 0; i < model.points; i++) {
-          const f = model.fMin * Math.pow(model.fMax / model.fMin, i / (model.points - 1));
-          const omega = 2 * Math.PI * f;
-          const x = omega * model.Rct * model.Cdl;
-          const zr = model.Rs + model.Rct / (1 + x * x);
-          const zi = -(model.Rct * omega * model.Rct * model.Cdl) / (1 + x * x);
-          const mag = Math.sqrt(zr * zr + zi * zi);
-          const phase = Math.atan2(zi, zr) * 180 / Math.PI;
-          pts.push({ f, mag, phase });
-        }
-
-        const n = Math.max(2, Math.floor(progress * pts.length));
-        const slice = pts.slice(0, n);
-        const topY0 = h * 0.43;
-        const bottomY0 = h - 22;
-        const plotW = w - pad * 1.2;
-        const plotH1 = h * 0.33;
-        const plotH2 = h * 0.24;
-        const x0 = pad;
-        const mapX = f => x0 + ((Math.log10(f) - Math.log10(model.fMin)) / (Math.log10(model.fMax) - Math.log10(model.fMin))) * plotW;
-
-        const mags = pts.map(p => Math.log10(p.mag));
-        const phases = pts.map(p => p.phase);
-        const minM = Math.min(...mags) - 0.06;
-        const maxM = Math.max(...mags) + 0.06;
-        const minP = Math.min(...phases) - 6;
-        const maxP = Math.max(...phases) + 6;
-        const mapY1 = v => topY0 - ((v - minM) / (maxM - minM)) * plotH1;
-        const mapY2 = v => bottomY0 - ((v - minP) / (maxP - minP)) * plotH2;
-
-        ctx.strokeStyle = 'rgba(234,244,255,0.52)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(x0, topY0);
-        ctx.lineTo(x0 + plotW, topY0);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(x0, bottomY0);
-        ctx.lineTo(x0 + plotW, bottomY0);
-        ctx.stroke();
-
-        ctx.fillStyle = 'rgba(234,244,255,0.84)';
-        ctx.font = '16px Segoe UI, Roboto, system-ui';
-        ctx.fillText('log|Z|', 8, 18);
-        ctx.fillText('fase (°)', 8, h - 5);
-        ctx.fillText('log f (Hz)', w - 102, h - 5);
-
-        ctx.strokeStyle = 'rgba(157,255,191,0.96)';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        slice.forEach((p, i) => {
-          const px = mapX(p.f);
-          const py = mapY1(Math.log10(p.mag));
-          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-        });
-        ctx.stroke();
-
-        ctx.strokeStyle = 'rgba(107,213,255,0.92)';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        slice.forEach((p, i) => {
-          const px = mapX(p.f);
-          const py = mapY2(p.phase);
-          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
-        });
-        ctx.stroke();
-
-        const last = slice[slice.length - 1] || pts[0];
-        ctx.fillStyle = '#eaf4ff';
-        ctx.font = '16px Segoe UI, Roboto, system-ui';
-        ctx.fillText(`p = ${(progress * 100).toFixed(0)}%`, w - 96, 18);
-        ctx.fillText(`|Z| = ${last.mag.toFixed(2)} Ω`, 160, 18);
-        ctx.fillText(`φ = ${last.phase.toFixed(1)}°`, 296, 18);
-      }
-
-      function drawEISCharts(progress) {
-        drawNyquist(progress);
-        drawBode(progress);
-      }
-
-      function buildStep1() {
-        const s1 = mk('a-entity', { id: 'step1', visible: 'true', position: '0 0 0' }, null);
-        mk('a-cylinder', { position: '0 -0.03 0', radius: '0.44', height: '0.02', color: '#1c2730', material: 'opacity: 0.75; transparent: true' }, s1);
-        mk('a-box', { position: '0 0.03 0', width: '0.64', height: '0.08', depth: '0.42', color: '#6f7782', material: 'metalness: 0.55; roughness: 0.32' }, s1);
-        const scale = mk('a-box', { id: 'scale', position: '0 0.20 0', width: '0.22', height: '0.10', depth: '0.18', color: '#aab4be', material: 'metalness: 0.22; roughness: 0.38' }, s1);
-        mk('a-box', { position: '0 0.25 0', width: '0.12', height: '0.02', depth: '0.12', color: '#d4dbe2', material: 'metalness: 0.4; roughness: 0.28' }, scale);
-        const pla = mk('a-entity', { id: 'plaLentils', position: '0 0.28 0' }, s1);
-        for (let i = 0; i < 3; i++) {
-          mk('a-sphere', { radius: '0.028', position: `${-0.04 + i * 0.04} 0 ${-0.01 + (i % 2) * 0.03}`, color: '#f6f9fb', material: 'metalness: 0.05; roughness: 0.9; opacity: 0.98' }, pla);
-        }
-        createText('1 g PLA', '0 0.46 0', '0.20');
-        registerClickable(scale);
-        steps[1] = s1;
-        labRoot.appendChild(s1);
-      }
-
-      function buildStep2() {
-        const s2 = mk('a-entity', { id: 'step2', visible: 'false' }, null);
-        const flask2 = mk('a-entity', { id: 'flaskDissolution', position: '0 0.02 0' }, s2);
-        mk('a-sphere', { radius: '0.19', scale: '1 0.86 1', material: glass('#9de9ff', 0.20) }, flask2);
-        mk('a-cone', { radiusBottom: '0.17', radiusTop: '0.20', height: '0.11', position: '0 0.09 0', material: glass('#9de9ff', 0.16) }, flask2);
-        mk('a-cylinder', { radius: '0.055', height: '0.28', position: '0 0.24 0', material: glass('#e8fdff', 0.18) }, flask2);
-        mk('a-cylinder', { id: 'stirrer2', radius: '0.045', height: '0.02', position: '0 0 0', color: '#f4fbff', material: 'metalness: 0.12; roughness: 0.4' }, flask2);
-        mk('a-sphere', { radius: '0.155', scale: '1 0.66 1', position: '0 -0.035 0', color: '#6db8ff', material: 'opacity: 0.40; transparent: true; roughness: 0.20' }, flask2);
-        for (let i = 0; i < 3; i++) mk('a-torus', { position: `0 ${0.42 + i * 0.12} 0`, rotation: '90 0 0', radius: '0.065', radiusTubular: '0.011', color: '#58d0ff', material: 'opacity: 0.80; transparent: true' }, flask2);
-        for (let i = 0; i < 30; i++) {
-          const p = mk('a-sphere', { radius: '0.012', position: `${(-0.13 + Math.random() * 0.26).toFixed(3)} ${(0.18 + Math.random() * 0.34).toFixed(3)} ${(-0.13 + Math.random() * 0.26).toFixed(3)}`, color: '#d7f3ff', material: 'opacity: 0.55; transparent: true; emissive: #8edcff; emissiveIntensity: 0.10' }, flask2);
-          p.__x = parseFloat(p.getAttribute('position').x || 0);
-          p.__z = parseFloat(p.getAttribute('position').z || 0);
-          p.__seed = Math.random() * 10;
-          vaporParticles.push(p);
-        }
-        createText('Reflujo', '0 0.96 0', '0.21');
-        registerClickable(flask2);
-        steps[2] = s2;
-        labRoot.appendChild(s2);
-      }
-
-      function buildStep3() {
-        const s3 = mk('a-entity', { id: 'step3', visible: 'false' }, null);
-        const flask3 = mk('a-entity', { id: 'flaskAcid', position: '-0.05 0.02 0' }, s3);
-        mk('a-sphere', { radius: '0.19', scale: '1 0.86 1', material: glass('#9de9ff', 0.20) }, flask3);
-        mk('a-cone', { radiusBottom: '0.17', radiusTop: '0.20', height: '0.11', position: '0 0.09 0', material: glass('#9de9ff', 0.16) }, flask3);
-        mk('a-cylinder', { radius: '0.055', height: '0.28', position: '0 0.24 0', material: glass('#e8fdff', 0.18) }, flask3);
-        mk('a-sphere', { radius: '0.155', scale: '1 0.66 1', position: '0 -0.035 0', color: '#6db8ff', material: 'opacity: 0.40; transparent: true; roughness: 0.20' }, flask3);
-        const pipette = mk('a-entity', { id: 'pipette', position: '0.52 0.20 0.10', rotation: '0 0 22' }, s3);
-        mk('a-cylinder', { radius: '0.032', height: '0.40', rotation: '0 0 90', color: '#d59c40', material: 'metalness: 0.18; roughness: 0.34' }, pipette);
-        mk('a-cone', { radiusBottom: '0.032', radiusTop: '0.004', height: '0.16', position: '-0.23 0 0', rotation: '0 0 90', color: '#b9c0c8', material: 'metalness: 0.76; roughness: 0.22' }, pipette);
-        mk('a-box', { width: '0.06', height: '0.10', depth: '0.04', position: '0.05 0.02 0', rotation: '0 0 15', color: '#ebd08f', material: 'metalness: 0.05; roughness: 0.55' }, pipette);
-        mk('a-sphere', { id: 'acidDrop', radius: '0.030', position: '0.50 0.42 0.06', color: '#ff9d39', material: 'emissive: #ff7a2f; emissiveIntensity: 0.15; roughness: 0.5' }, s3);
-        createText('H₃PO₂', '0.56 0.34 0', '0.19', '#ffc38a');
-        registerClickable(pipette);
-        steps[3] = s3;
-        labRoot.appendChild(s3);
-      }
-
-      function buildStep4() {
-        const s4 = mk('a-entity', { id: 'step4', visible: 'false' }, null);
-        const flask4 = mk('a-entity', { id: 'flaskStirring', position: '0 0.02 0' }, s4);
-        mk('a-sphere', { radius: '0.19', scale: '1 0.86 1', material: glass('#9de9ff', 0.20) }, flask4);
-        mk('a-cone', { radiusBottom: '0.17', radiusTop: '0.20', height: '0.11', position: '0 0.09 0', material: glass('#9de9ff', 0.16) }, flask4);
-        mk('a-cylinder', { radius: '0.055', height: '0.28', position: '0 0.24 0', material: glass('#e8fdff', 0.18) }, flask4);
-        mk('a-sphere', { radius: '0.155', scale: '1 0.66 1', position: '0 -0.035 0', color: '#69adff', material: 'opacity: 0.42; transparent: true; roughness: 0.20' }, flask4);
-        mk('a-cylinder', { id: 'stirrer4', radius: '0.045', height: '0.02', position: '0 0 0', color: '#f4fbff', material: 'metalness: 0.10; roughness: 0.42' }, flask4);
-        createText('16 h', '0 0.48 0', '0.22');
-        createText('Agitación prolongada', '0 -0.45 0', '0.16', '#bdefff');
-        registerClickable(flask4);
-        steps[4] = s4;
-        labRoot.appendChild(s4);
-      }
-
-      function buildStep5() {
-        const s5 = mk('a-entity', { id: 'step5', visible: 'false' }, null);
-        const flask5 = mk('a-entity', { id: 'flaskPouring', position: '-0.32 0.10 0.05', rotation: '0 0 18' }, s5);
-        mk('a-sphere', { radius: '0.19', scale: '1 0.86 1', material: glass('#9de9ff', 0.20) }, flask5);
-        mk('a-cone', { radiusBottom: '0.17', radiusTop: '0.20', height: '0.11', position: '0 0.09 0', material: glass('#9de9ff', 0.16) }, flask5);
-        mk('a-cylinder', { radius: '0.055', height: '0.28', position: '0 0.24 0', material: glass('#e8fdff', 0.18) }, flask5);
-        mk('a-cylinder', { position: '0.16 -0.10 0', rotation: '90 0 0', radius: '0.012', height: '0.34', color: '#82c2ff', material: 'opacity: 0.36; transparent: true; roughness: 0.18' }, flask5);
-        const petri = mk('a-entity', { position: '0.42 0.02 0' }, s5);
-        mk('a-cylinder', { radius: '0.22', height: '0.036', color: '#e9f0f5', material: 'opacity: 0.45; transparent: true; roughness: 0.25; metalness: 0.12' }, petri);
-        const petriLiquid = mk('a-cylinder', { id: 'petriLiquid', radius: '0.18', height: '0.012', position: '0 0.02 0', color: '#6daefc', material: 'opacity: 0.56; transparent: true; roughness: 0.20' }, petri);
-        setVisible(petriLiquid, false);
-        createText('Placa Petri', '0.42 0.32 0', '0.17');
-        registerClickable(flask5);
-        steps[5] = s5;
-        labRoot.appendChild(s5);
-      }
-
-      function buildStep6() {
-        const s6 = mk('a-entity', { id: 'step6', visible: 'false' }, null);
-        const des = mk('a-entity', { id: 'desiccator', position: '0 0.06 0' }, s6);
-        mk('a-sphere', { radius: '0.28', scale: '1 0.72 1', position: '0 0.18 0', material: glass('#b6f5ff', 0.16) }, des);
-        mk('a-cylinder', { radius: '0.28', height: '0.06', position: '0 -0.01 0', color: '#7f8891', material: 'metalness: 0.36; roughness: 0.38' }, des);
-        mk('a-cylinder', { radius: '0.18', height: '0.015', position: '0 0.03 0', color: '#dce6ee', material: 'opacity: 0.60; transparent: true' }, des);
-        mk('a-cylinder', { radius: '0.14', height: '0.010', position: '0 0.045 0', color: '#68e99a', material: 'opacity: 0.52; transparent: true; roughness: 0.22' }, des);
-        mk('a-cylinder', { radius: '0.12', height: '0.010', position: '0 0.05 0', color: '#8cf0b6', material: 'opacity: 0.18; transparent: true' }, des);
-        for (let i = 0; i < 20; i++) {
-          const ang = (Math.PI * 2 * i) / 20;
-          const x = Math.cos(ang) * 0.20;
-          const z = Math.sin(ang) * 0.20;
-          const sph = mk('a-sphere', { radius: '0.016', position: `${x.toFixed(3)} 0.08 ${z.toFixed(3)}`, color: '#ff8c00', material: 'metalness: 0.08; roughness: 0.70' }, des);
-          silicaParticles.push(sph);
-        }
-        createText('Secado 24 h', '0 0.52 0', '0.20');
-        registerClickable(des);
-        steps[6] = s6;
-        labRoot.appendChild(s6);
-      }
-
-      function buildStep7() {
-        const s7 = mk('a-entity', { id: 'step7', visible: 'false' }, null);
-        const disc = mk('a-cylinder', { id: 'membraneDisc', radius: '0.15', height: '0.013', rotation: '90 0 0', position: '-0.05 0.06 0', color: '#5ce699', material: 'opacity: 0.56; transparent: true; roughness: 0.20' }, s7);
-        const caliper = mk('a-entity', { position: '0.26 0.08 0', rotation: '0 -16 0' }, s7);
-        mk('a-box', { width: '0.36', height: '0.04', depth: '0.06', color: '#7f8891', material: 'metalness: 0.46; roughness: 0.32' }, caliper);
-        mk('a-box', { width: '0.06', height: '0.09', depth: '0.05', position: '-0.17 0.01 0', color: '#c8d1da', material: 'metalness: 0.80; roughness: 0.20' }, caliper);
-        mk('a-box', { width: '0.06', height: '0.09', depth: '0.05', position: '0.17 0.01 0', color: '#c8d1da', material: 'metalness: 0.80; roughness: 0.20' }, caliper);
-        createText('Corte del disco', '0 0.48 0', '0.19');
-        registerClickable(disc);
-        steps[7] = s7;
-        labRoot.appendChild(s7);
-      }
-
-      function buildStep8() {
-        const s8 = mk('a-entity', { id: 'step8', visible: 'false' }, null);
-        const cell8 = mk('a-entity', { id: 'eisCell', position: '0 0.07 0' }, s8);
-        mk('a-box', { width: '0.46', height: '0.46', depth: '0.46', color: '#8ce7ff', material: 'opacity: 0.17; transparent: true; metalness: 0.12; roughness: 0.12; side: double' }, cell8);
-        mk('a-cylinder', { radius: '0.13', height: '0.010', rotation: '90 0 0', position: '0 -0.11 0', color: '#69f0a8', material: 'opacity: 0.52; transparent: true' }, cell8);
-        mk('a-cylinder', { radius: '0.02', height: '0.30', position: '-0.12 0.01 0', color: '#7f8891', material: 'metalness: 0.74; roughness: 0.24' }, cell8);
-        mk('a-cylinder', { radius: '0.017', height: '0.28', position: '0.02 0.01 0', color: '#eff7ff', material: 'metalness: 0.58; roughness: 0.20' }, cell8);
-        mk('a-cylinder', { radius: '0.022', height: '0.33', position: '0.14 0.01 0', color: '#d4dbe2', material: 'metalness: 0.84; roughness: 0.18' }, cell8);
-        createText('Montaje EIS', '0 0.52 0', '0.19');
-        registerClickable(cell8);
-        steps[8] = s8;
-        labRoot.appendChild(s8);
-      }
-
-      function buildStep9() {
-        const s9 = mk('a-entity', { id: 'step9', visible: 'false' }, null);
-        const cell9 = mk('a-entity', { id: 'eisCellMeasure', position: '-0.48 0.04 0' }, s9);
-        mk('a-box', { width: '0.44', height: '0.44', depth: '0.44', color: '#8ce7ff', material: 'opacity: 0.17; transparent: true; metalness: 0.12; roughness: 0.12; side: double' }, cell9);
-        mk('a-cylinder', { id: 'insertedMembrane', radius: '0.13', height: '0.010', rotation: '90 0 0', position: '0 -0.11 0', color: '#69f0a8', material: 'opacity: 0.58; transparent: true' }, cell9);
-        mk('a-cylinder', { radius: '0.02', height: '0.30', position: '-0.12 0.01 0', color: '#7f8891', material: 'metalness: 0.74; roughness: 0.24' }, cell9);
-        mk('a-cylinder', { radius: '0.017', height: '0.28', position: '0.02 0.01 0', color: '#eff7ff', material: 'metalness: 0.58; roughness: 0.20' }, cell9);
-        mk('a-cylinder', { radius: '0.022', height: '0.33', position: '0.14 0.01 0', color: '#d4dbe2', material: 'metalness: 0.84; roughness: 0.18' }, cell9);
-        const nyquistPlane = mk('a-plane', { id: 'nyquistPlane', width: '0.78', height: '0.78', position: '0.55 0.35 0', material: 'shader: flat; src: #nyquistCanvas; transparent: true; side: double; opacity: 1' }, s9);
-        const bodePlane = mk('a-plane', { id: 'bodePlane', width: '0.78', height: '0.39', position: '0.55 -0.15 0', material: 'shader: flat; src: #bodeCanvas; transparent: true; side: double; opacity: 1' }, s9);
-        mk('a-plane', { width: '1.0', height: '0.02', position: '0.55 0.04 0.01', color: '#1f2a35', material: 'opacity: 0.30; transparent: true' }, s9);
-        createText('Nyquist', '0.55 0.80 0.01', '0.20');
-        createText('Bode', '0.55 0.08 0.01', '0.20');
-        createText('Rs = 10.2 Ω   ·   Rct = 48.7 Ω   ·   Cdl = 12.5 µF', '0 0.63 0.02', '0.16', '#eaf4ff');
-        createText('Rango: 10 mHz a 100 kHz', '0 0.48 0.02', '0.15', '#bdf8da');
-        registerClickable(cell9);
-        steps[9] = s9;
-        labRoot.appendChild(s9);
-      }
-
-      function buildAllSteps() {
-        buildStep1();
-        buildStep2();
-        buildStep3();
-        buildStep4();
-        buildStep5();
-        buildStep6();
-        buildStep7();
-        buildStep8();
-        buildStep9();
-      }
-
-      function onObjectClick(e) {
-        e?.preventDefault?.();
-        if (!state.started || state.busy || state.complete) return;
-        const target = e.currentTarget || e.target;
-        const id = target?.id || '';
-
-        if (state.currentStep === 1 && id === 'scale') {
-          const lentils = steps[1].querySelector('#plaLentils');
-          if (lentils) setVisible(lentils, false);
-          advanceStep();
-          return;
-        }
-
-        if (state.currentStep === 2 && id === 'flaskDissolution') {
-          state.busy = true;
-          state.vaporOn = true;
-          spinElement(target, 0.1);
-          setTimeout(() => { state.busy = false; advanceStep(); }, 650);
-          return;
-        }
-
-        if (state.currentStep === 3 && id === 'pipette') {
-          state.busy = true;
-          const drop = steps[3].querySelector('#acidDrop');
-          animateDrop(drop, () => {
-            state.busy = false;
-            advanceStep();
-          });
-          return;
-        }
-
-        if (state.currentStep === 4 && id === 'flaskStirring') {
-          state.busy = true;
-          state.vaporOn = false;
-          spinElement(target, 0.08);
-          setTimeout(() => { state.busy = false; advanceStep(); }, 650);
-          return;
-        }
-
-        if (state.currentStep === 5 && id === 'flaskPouring') {
-          const petriLiquid = steps[5].querySelector('#petriLiquid');
-          if (petriLiquid) setVisible(petriLiquid, true);
-          advanceStep();
-          return;
-        }
-
-        if (state.currentStep === 6 && id === 'desiccator') {
-          state.busy = true;
-          animateDrying();
-          setTimeout(() => { state.busy = false; }, 1600);
-          return;
-        }
-
-        if (state.currentStep === 7 && id === 'membraneDisc') {
-          const disc = target;
-          disc.setAttribute('animation__cut', 'property: scale; to: 0.01 0.01 0.01; dur: 280; easing: easeOutQuad');
-          setTimeout(() => advanceStep(), 320);
-          return;
-        }
-
-        if (state.currentStep === 8 && id === 'eisCell') {
-          const insertedMembrane = steps[9].querySelector('#insertedMembrane');
-          if (insertedMembrane) setVisible(insertedMembrane, true);
-          advanceStep();
-          return;
-        }
-
-        if (state.currentStep === 9 && id === 'eisCellMeasure') {
-          const nyquistPlane = document.getElementById('nyquistPlane');
-          const bodePlane = document.getElementById('bodePlane');
-          animateEISMeasurement(nyquistPlane, bodePlane);
-        }
-      }
-
-      function startExperiment() {
-        if (state.started) return;
-        startBtn.disabled = true;
-        demoBtn.disabled = true;
-        startStatus.textContent = 'Iniciando cámara AR…';
-
-        overlay.style.display = 'none';
-        hud.style.display = 'block';
-
-        state.pendingStart = true;
-        if (state.sceneReady) {
-          scene.play();
-          window.dispatchEvent(new Event('resize'));
-          state.started = true;
-          state.pendingStart = false;
-          resetExperiment();
-          startStatus.textContent = 'Cámara iniciada. Escanea el marcador Hiro.';
-        } else {
-          startStatus.textContent = 'La escena aún está cargando. Iniciando en cuanto esté lista…';
-        }
-      }
-
-      function init() {
-        buildDots();
-        buildAllSteps();
-        drawEISCharts(0);
-        showStep(1);
-        finalBadge.style.display = 'none';
-        restartWrap.style.display = 'none';
-
-        scene.addEventListener('loaded', () => {
-          state.sceneReady = true;
-          scene.pause();
-          if (state.pendingStart) {
-            scene.play();
-            window.dispatchEvent(new Event('resize'));
-            state.started = true;
-            state.pendingStart = false;
-            resetExperiment();
-            startStatus.textContent = 'Cámara iniciada. Escanea el marcador Hiro.';
-          }
+        // Hover cursor
+        canvas3D.addEventListener('mousemove', (event) => {
+            if (isTransitioning || allCompleted || isMeasuring) {
+                canvas3D.classList.remove('clickable-cursor');
+                return;
+            }
+            const intersections = getIntersections(event);
+            if (intersections.length > 0 && intersections[0].object.userData?.isClickable &&
+                intersections[0].object.userData?.stationIndex === currentStep) {
+                canvas3D.classList.add('clickable-cursor');
+            } else {
+                canvas3D.classList.remove('clickable-cursor');
+            }
         });
 
-        scene.addEventListener('camera-init', () => {
-          startStatus.textContent = 'Cámara lista.';
-        });
+        // ==================== ANIMATION LOOP ====================
+        const clock = new THREE.Clock();
 
-        scene.addEventListener('camera-error', e => {
-          console.warn('camera-error', e);
-          startStatus.textContent = 'Error al iniciar la cámara. Verifica permisos, HTTPS y que Chrome no esté bloqueando el acceso.';
-        });
+        function animate(timestamp) {
+            requestAnimationFrame(animate);
 
-        scene.addEventListener('arjs-video-loaded', () => {
-          startStatus.textContent = 'Video de cámara activo.';
-        });
+            const dt = Math.min(clock.getDelta(), 0.1);
+            const elapsed = timestamp * 0.001;
 
-        const marker = document.getElementById('hiroMarker');
-        marker.addEventListener('markerFound', () => {
-          if (!state.complete) instructionText.textContent = stepMessages[state.currentStep - 1];
-        });
-        marker.addEventListener('markerLost', () => {
-          if (!state.complete) instructionText.textContent = 'Marcador perdido. Reapunta la cámara al Hiro para continuar.';
-        });
+            controls.update();
 
-        startBtn.addEventListener('click', startExperiment);
-        restartBtn.addEventListener('click', () => {
-          resetExperiment();
-          restartWrap.style.display = 'none';
-        });
-        demoBtn.addEventListener('click', () => {
-          alert('1) Inicia el experimento. 2) Escanea el marcador Hiro. 3) Toca la balanza y sigue la secuencia científica hasta la medición EIS.');
-        });
-      }
+            // Smooth camera animation
+            if (isCameraAnimating) {
+                const lerpFactor = 1 - Math.exp(-3.5 * dt);
+                controls.target.lerp(cameraTargetLook, lerpFactor);
+                camera.position.lerp(cameraTargetPos, lerpFactor * 0.7);
+                if (controls.target.distanceTo(cameraTargetLook) < 0.03 &&
+                    camera.position.distanceTo(cameraTargetPos) < 0.06) {
+                    controls.target.copy(cameraTargetLook);
+                    camera.position.copy(cameraTargetPos);
+                    isCameraAnimating = false;
+                }
+            }
 
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init, { once: true });
-      } else {
+            // Glow ring pulsing
+            glowRings.forEach(ring => {
+                if (ring.visible) {
+                    const phase = ring.userData.pulsePhase;
+                    const pulse = 0.7 + 0.3 * Math.sin(elapsed * 2.5 + phase);
+                    ring.material.opacity = ring.userData.baseOpacity * pulse;
+                    ring.scale.setScalar(1 + 0.06 * Math.sin(elapsed * 3 + phase));
+                }
+            });
+
+            // Station animations
+            // Station 1 (index 0): pellets already handled
+            // Station 2 (index 1): vapor + stirrer
+            if (stationGroups[1]) {
+                const ud1 = stationGroups[1].userData;
+                if (ud1.vaporGroup && ud1.vaporGroup.visible) {
+                    ud1.vaporGroup.children.forEach(particle => {
+                        const pd = particle.userData;
+                        particle.position.y = pd.baseY + Math.sin(elapsed * pd.speed * 3 + pd.offset) * 0.4;
+                        particle.material.opacity = 0.3 + 0.3 * Math.sin(elapsed * pd.speed * 2 + pd.offset);
+                    });
+                }
+                if (ud1.stirBar && stepStates[1] === 'completed') {
+                    ud1.stirBar.rotation.y += dt * 8;
+                }
+            }
+            // Station 3 (index 2): droplet animation
+            if (stationGroups[2]) {
+                const ud2 = stationGroups[2].userData;
+                if (ud2.droplet && ud2.droplet.visible && stepStates[2] === 'completed') {
+                    ud2.droplet.position.y = 0.68 + Math.sin(elapsed * 1.5) * 0.08;
+                }
+            }
+            // Station 4 (index 3): stirrer
+            if (stationGroups[3]) {
+                const ud3 = stationGroups[3].userData;
+                if (ud3.stirBar && (stepStates[3] === 'completed' || stepStates[3] === 'active')) {
+                    ud3.stirBar.rotation.y += dt * 10;
+                }
+            }
+            // Station 5 (index 4): liquid shimmer
+            if (stationGroups[4]) {
+                const ud4 = stationGroups[4].userData;
+                if (ud4.petriLiquid && ud4.petriLiquid.visible) {
+                    ud4.petriLiquid.material.emissiveIntensity = 0.25 + 0.1 * Math.sin(elapsed * 3);
+                }
+            }
+            // Station 6 (index 5): desiccant color
+            if (stationGroups[5]) {
+                const ud5 = stationGroups[5].userData;
+                if (ud5.desiccantGroup && stepStates[5] === 'completed') {
+                    ud5.desiccantGroup.children.forEach(bead => {
+                        if (bead.userData.colorPhase > 0) {
+                            bead.userData.colorPhase = Math.min(1, bead.userData.colorPhase + dt * 0.3);
+                            const t = bead.userData.colorPhase;
+                            const r = 0.98 - t * 0.45;
+                            const g = 0.45 + t * 0.25;
+                            const b = 0.09 + t * 0.45;
+                            bead.material.color.setRGB(r, g, b);
+                            bead.material.emissive.setRGB(r * 0.3, g * 0.15, b * 0.3);
+                        }
+                    });
+                }
+            }
+            // Station 9 (index 8): display panels shimmer
+            if (stationGroups[8] && (stepStates[8] === 'animating' || stepStates[8] === 'completed')) {
+                const ud8 = stationGroups[8].userData;
+                if (ud8.display1) {
+                    ud8.display1.material.emissiveIntensity = 0.6 + 0.2 * Math.sin(elapsed * 4);
+                }
+                if (ud8.display2) {
+                    ud8.display2.material.emissiveIntensity = 0.6 + 0.2 * Math.sin(elapsed * 4 + 1);
+                }
+            }
+
+            // Accent light movement
+            accentLight.intensity = 6 + 1.5 * Math.sin(elapsed * 0.7);
+
+            renderer.render(scene, camera);
+        }
+
+        // ==================== INITIALIZATION ====================
+        function init() {
+            resizeGraphCanvases();
+            updateAllGraphs(0);
+            updateUI();
+            stations[0].ring.visible = true;
+            stations[0].ring.material.emissiveIntensity = 1.2;
+            stations[0].active = true;
+            stepStates[0] = 'active';
+            animateCameraToStation(0);
+            controls.target.set(0, 0.5, 0);
+            camera.position.set(7, 5.5, 9);
+            controls.update();
+            requestAnimationFrame(animate);
+        }
+
         init();
-      }
 
-      window.addEventListener('resize', () => drawEISCharts(state.measureProgress));
-    })();
-  </script>
+        console.log('🔬 Laboratorio de Materiales — PLA/H₃PO₂ & EIS — Listo');
+        console.log('   Estaciones: 9 | Pasos secuenciales | Modelo Randles');
+        console.log('   Rs=10.2Ω  Rct=48.7Ω  Cdl=12.5µF');
+        console.log('   Haz clic en la balanza (estación 1) para comenzar.');
+    </script>
 </body>
 </html>
