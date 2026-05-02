@@ -1,56 +1,1210 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
-<title>WebAR Minijuego PLA-EIS</title>
-<script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-<style>
-body{margin:0;background:#0a0f14;font-family:'Segoe UI',Roboto,system-ui;overflow:hidden}
-#overlay,#ui{position:fixed;left:0;right:0;z-index:10}
-#overlay{inset:0;display:flex;justify-content:center;align-items:center;flex-direction:column;background:#0a0f14}
-button{padding:14px 24px;border:0;border-radius:14px;font-weight:700}
-#panel{margin:10px auto;width:92%;padding:14px;color:#fff;background:rgba(20,30,40,.55);backdrop-filter:blur(12px);border-radius:16px;text-align:center}
-#dots{display:flex;justify-content:center;gap:8px}.dot{width:12px;height:12px;border-radius:50%;background:#334}.active{background:#00d2ff}
-canvas{display:none}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0a0f14" />
+  <title>WebAR · Síntesis y caracterización EIS de membrana PLA dopada</title>
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+  <style>
+    :root {
+      --bg: #0a0f14;
+      --panel: rgba(12, 18, 26, 0.58);
+      --panel-strong: rgba(10, 15, 20, 0.84);
+      --line: rgba(148, 190, 255, 0.18);
+      --text: #eaf4ff;
+      --muted: rgba(234, 244, 255, 0.72);
+      --accent: #6bd5ff;
+      --accent-2: #9dffbf;
+      --ok: #75f0b5;
+      --warn: #ffb86b;
+      --shadow: 0 18px 40px rgba(0, 0, 0, .38);
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: radial-gradient(1200px 900px at 50% 15%, #14202d 0%, #0a0f14 42%, #05080b 100%);
+      font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      display: grid;
+      place-items: center;
+      background: linear-gradient(180deg, rgba(7,10,14,.92), rgba(7,10,14,.78));
+      backdrop-filter: blur(18px);
+    }
+
+    .overlay-card {
+      width: min(92vw, 560px);
+      border: 1px solid rgba(141, 192, 255, 0.18);
+      background: linear-gradient(180deg, rgba(15,22,31,.86), rgba(10,15,20,.76));
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      padding: 24px 22px 18px;
+    }
+
+    .title {
+      font-size: 1.3rem;
+      line-height: 1.15;
+      font-weight: 700;
+      margin: 0 0 10px;
+      letter-spacing: .2px;
+    }
+
+    .subtitle {
+      margin: 0 0 18px;
+      color: var(--muted);
+      font-size: .96rem;
+      line-height: 1.45;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 700;
+      letter-spacing: .2px;
+      border-radius: 18px;
+      padding: 13px 16px;
+      min-height: 48px;
+      transition: transform .15s ease, opacity .15s ease, box-shadow .15s ease, background .15s ease;
+    }
+
+    button:active { transform: scale(.985); }
+    button:disabled { opacity: .7; cursor: wait; }
+
+    .primary {
+      color: #03131a;
+      background: linear-gradient(135deg, #7fe3ff, #92ffc1);
+      box-shadow: 0 12px 28px rgba(99, 223, 255, .22);
+    }
+
+    .secondary {
+      color: var(--text);
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+    }
+
+    #startStatus {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: .86rem;
+      min-height: 1.2em;
+    }
+
+    #hud {
+      position: fixed;
+      left: 50%;
+      top: 14px;
+      transform: translateX(-50%);
+      width: min(94vw, 760px);
+      z-index: 25;
+      pointer-events: none;
+      display: none;
+    }
+
+    .hud-panel {
+      pointer-events: auto;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      backdrop-filter: blur(18px);
+      border-radius: 22px;
+      box-shadow: var(--shadow);
+      padding: 14px 16px 12px;
+    }
+
+    #instructionText {
+      font-size: .98rem;
+      line-height: 1.35;
+      color: var(--text);
+      margin: 0 0 10px;
+      min-height: 2.2em;
+    }
+
+    .dots {
+      display: grid;
+      grid-template-columns: repeat(9, 1fr);
+      gap: 7px;
+    }
+
+    .dot {
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.12);
+      border: 1px solid rgba(255,255,255,.06);
+      transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
+    }
+
+    .dot.active {
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      box-shadow: 0 0 0 4px rgba(107,213,255,.12);
+      transform: scale(1.06);
+    }
+
+    .dot.done { background: rgba(118,242,176,.9); }
+
+    #finalBadge {
+      margin-top: 10px;
+      display: none;
+      border: 1px solid rgba(118,242,176,.25);
+      background: rgba(12, 36, 24, 0.72);
+      color: #bdf8da;
+      border-radius: 16px;
+      padding: 10px 12px;
+      font-weight: 700;
+    }
+
+    #restartWrap {
+      margin-top: 10px;
+      display: none;
+    }
+
+    #restartBtn {
+      width: 100%;
+      background: linear-gradient(135deg, #ffe59a, #ffb86b);
+      color: #271400;
+    }
+
+    #touchHint {
+      margin-top: 8px;
+      font-size: .82rem;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+
+    #sceneWrap {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+    }
+
+    a-scene {
+      width: 100%;
+      height: 100%;
+    }
+
+    canvas.chart-tex {
+      position: absolute;
+      left: -9999px;
+      top: -9999px;
+      width: 1px;
+      height: 1px;
+      opacity: 0;
+      pointer-events: none;
+    }
+  </style>
 </head>
 <body>
-<div id='overlay'><button id='startBtn'>Comenzar experimento</button></div>
-<div id='ui' style='display:none'><div id='panel'><div id='instruction'></div><div id='dots'></div><button id='resetBtn' style='display:none;margin-top:8px'>Reiniciar</button></div></div>
-<canvas id='nyquist' width='512' height='512'></canvas><canvas id='bode' width='512' height='256'></canvas>
-<a-scene embedded vr-mode-ui='enabled:false' renderer='logarithmicDepthBuffer:true' arjs='sourceType:webcam; facingMode:environment; debugUIEnabled:false;'>
-<a-marker preset='hiro'><a-entity id='labRoot'></a-entity></a-marker><a-entity camera cursor='rayOrigin:mouse'></a-entity></a-scene>
-<script>
-(()=>{
-const scene=document.querySelector('a-scene'),root=document.getElementById('labRoot');
-const overlay=startBtn.parentElement,ui=document.getElementById('ui'),instruction=document.getElementById('instruction'),dots=document.getElementById('dots'),resetBtn=document.getElementById('resetBtn');
-let current=1,steps=[];
-const texts=['Toca la balanza para pesar 1 g de PLA','Toca el matraz para disolver','Toca la micropipeta para añadir H₃PO₂','Toca el matraz para agitar 16 h','Toca el matraz para verter','Toca el desecador para secar','Toca el disco para cortar','Toca la celda para montar','Toca la celda para medir'];
-for(let i=0;i<9;i++){const d=document.createElement('div');d.className='dot';dots.appendChild(d)}
-function mk(tag,attrs,parent=root){const e=document.createElement(tag);for(const k in attrs)e.setAttribute(k,attrs[k]);parent.appendChild(e);return e}
-function show(n){steps.forEach((s,i)=>s.object3D.visible=i===n-1);instruction.textContent=texts[n-1];[...dots.children].forEach((d,i)=>d.classList.toggle('active',i<n));}
-function advance(){current++;if(current<=9)show(current);else{instruction.textContent='Experimento completado';resetBtn.style.display='inline-block';}}
-function clickable(ent,fn){ent.classList.add('clickable');ent.addEventListener('click',fn)}
-function build(){
-for(let i=0;i<9;i++)steps[i]=mk('a-entity',{visible:i===0});
-clickable(mk('a-box',{position:'0 .2 0',color:'#777'},steps[0]),advance);
-clickable(mk('a-sphere',{position:'0 .4 0',radius:.25,color:'#88ddff',opacity:.5},steps[1]),advance);
-clickable(mk('a-cylinder',{position:'0 .4 0',radius:.05,height:.5,color:'#ffb347'},steps[2]),advance);
-clickable(mk('a-sphere',{position:'0 .4 0',radius:.25,color:'#88ddff'},steps[3]),advance);
-clickable(mk('a-sphere',{position:'0 .4 0',radius:.25,color:'#88ddff'},steps[4]),advance);
-clickable(mk('a-dome',{position:'0 .5 0',radius:.5,color:'#aaa',opacity:.4},steps[5]),advance);
-clickable(mk('a-cylinder',{position:'0 .2 0',radius:.3,height:.02,color:'#66ff88'},steps[6]),advance);
-clickable(mk('a-box',{position:'0 .3 0',color:'#999',opacity:.5},steps[7]),advance);
-const c=mk('a-box',{position:'0 .3 0',color:'#00d2ff'},steps[8]);clickable(c,()=>{draw();advance()});
-mk('a-plane',{position:'-.8 .8 0',width:1,height:1,material:'src:#nyquist'},steps[8]);mk('a-plane',{position:'.8 .8 0',width:1,height:.5,material:'src:#bode'},steps[8]);
-}
-function draw(){const n=document.getElementById('nyquist').getContext('2d'),b=document.getElementById('bode').getContext('2d');n.fillRect(0,0,512,512);b.fillRect(0,0,512,256);n.strokeStyle='#00d2ff';b.strokeStyle='#00d2ff';n.beginPath();for(let i=0;i<200;i++){let x=50+i*2,y=400-Math.sin(i/30)*120;i?n.lineTo(x,y):n.moveTo(x,y)}n.stroke();b.beginPath();for(let i=0;i<200;i++){let x=50+i*2,y=180-Math.cos(i/20)*60;i?b.lineTo(x,y):b.moveTo(x,y)}b.stroke();}
-build();show(1);
-startBtn.onclick=()=>{overlay.style.display='none';ui.style.display='block';scene.play()};
-resetBtn.onclick=()=>{current=1;resetBtn.style.display='none';show(1)};
-scene.addEventListener('loaded',()=>scene.pause());
-})();
-</script>
-</body></html>
+  <div id="overlay">
+    <div class="overlay-card">
+      <h1 class="title">Minijuego WebAR: Síntesis y caracterización EIS de membrana PLA dopada</h1>
+      <p class="subtitle">Escanea el marcador Hiro con tu smartphone y completa 9 acciones experimentales tocando los objetos virtuales. El flujo está construido para que la cámara AR se active primero y luego aparezca toda la experiencia científica.</p>
+      <div class="btn-row">
+        <button id="startBtn" class="primary">Comenzar experimento</button>
+        <button id="demoBtn" class="secondary" type="button">Ver instrucciones</button>
+      </div>
+      <div id="startStatus">La cámara se activará al tocar el botón.</div>
+      <div id="touchHint">Usa una superficie bien iluminada, apunta la cámara trasera al marcador y mantén el teléfono estable.</div>
+    </div>
+  </div>
+
+  <div id="hud">
+    <div class="hud-panel">
+      <p id="instructionText">Preparando experimento…</p>
+      <div class="dots" id="stepDots"></div>
+      <div id="finalBadge">Experimento completado</div>
+      <div id="restartWrap"><button id="restartBtn">Reiniciar</button></div>
+    </div>
+  </div>
+
+  <div id="sceneWrap">
+    <a-scene
+      id="arScene"
+      embedded
+      vr-mode-ui="enabled: false"
+      renderer="antialias: true; alpha: true; precision: mediump; colorManagement: true"
+      arjs="sourceType: webcam; facingMode: environment; sourceWidth: 1280; sourceHeight: 720; displayWidth: 1280; displayHeight: 720; trackingMethod: best; debugUIEnabled: false;"
+      autoplay="false"
+    >
+      <a-assets>
+        <canvas id="nyquistCanvas" width="512" height="512"></canvas>
+        <canvas id="bodeCanvas" width="512" height="256"></canvas>
+      </a-assets>
+
+      <a-marker preset="hiro" emitevents="true" id="hiroMarker">
+        <a-entity id="labRoot" position="0 0 0" scale="1 1 1"></a-entity>
+      </a-marker>
+
+      <a-entity id="cameraRig" camera cursor="rayOrigin: mouse; fuse: false" raycaster="objects: .clickable" look-controls="enabled: false"></a-entity>
+    </a-scene>
+  </div>
+
+  <script>
+    (() => {
+      const scene = document.getElementById('arScene');
+      const overlay = document.getElementById('overlay');
+      const hud = document.getElementById('hud');
+      const instructionText = document.getElementById('instructionText');
+      const stepDots = document.getElementById('stepDots');
+      const finalBadge = document.getElementById('finalBadge');
+      const restartWrap = document.getElementById('restartWrap');
+      const restartBtn = document.getElementById('restartBtn');
+      const startBtn = document.getElementById('startBtn');
+      const demoBtn = document.getElementById('demoBtn');
+      const startStatus = document.getElementById('startStatus');
+      const labRoot = document.getElementById('labRoot');
+      const nyquistCanvas = document.getElementById('nyquistCanvas');
+      const bodeCanvas = document.getElementById('bodeCanvas');
+      const nyquistCtx = nyquistCanvas.getContext('2d');
+      const bodeCtx = bodeCanvas.getContext('2d');
+
+      const state = {
+        started: false,
+        complete: false,
+        currentStep: 1,
+        busy: false,
+        spinRAF: 0,
+        dryingTimer: 0,
+        dropTimer: 0,
+        measureTimer: 0,
+        vaporOn: false,
+        stirringOn: false,
+        dryingOn: false,
+        measureProgress: 0
+      };
+
+      const model = {
+        Rs: 10.2,
+        Rct: 48.7,
+        Cdl: 12.5e-6,
+        fMin: 1e-2,
+        fMax: 1e5,
+        points: 200
+      };
+
+      const stepMessages = [
+        'Paso 1/9 · Toca la balanza para pesar 1 g de PLA.',
+        'Paso 2/9 · Toca el matraz para disolver con calor y reflujo.',
+        'Paso 3/9 · Toca la micropipeta para añadir H₃PO₂.',
+        'Paso 4/9 · Toca el matraz para agitar 16 h.',
+        'Paso 5/9 · Toca el matraz para verter en placa Petri.',
+        'Paso 6/9 · Toca el desecador para iniciar el secado (24 h).',
+        'Paso 7/9 · Toca el disco de membrana para cortarlo.',
+        'Paso 8/9 · Toca la celda EIS para montar la muestra.',
+        'Paso 9/9 · Toca la celda EIS para iniciar la medición.'
+      ];
+
+      const steps = {};
+      const vaporParticles = [];
+      const silicaParticles = [];
+      const clickableEls = [];
+
+      function mk(tag, attrs = {}, parent = labRoot) {
+        const el = document.createElement(tag);
+        Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+        parent.appendChild(el);
+        return el;
+      }
+
+      function setVisible(el, visible) {
+        if (el) el.setAttribute('visible', visible ? 'true' : 'false');
+      }
+
+      function registerClickable(el) {
+        el.classList.add('clickable');
+        clickableEls.push(el);
+        el.addEventListener('click', onObjectClick);
+        el.addEventListener('touchstart', onObjectClick, { passive: true });
+      }
+
+      function createText(value, position, size = '0.25', color = '#eaf4ff', align = 'center') {
+        return mk('a-text', {
+          value,
+          position,
+          align,
+          color,
+          width: '3.0',
+          wrapCount: '30',
+          shader: 'flat',
+          side: 'double',
+          baseline: 'center',
+          scale: `${size} ${size} ${size}`,
+          opacity: '1'
+        });
+      }
+
+      function glass(color = '#b9e9ff', opacity = 0.35) {
+        return `color: ${color}; opacity: ${opacity}; transparent: true; metalness: 0.12; roughness: 0.14; side: double`;
+      }
+
+      function clearTimers() {
+        if (state.spinRAF) cancelAnimationFrame(state.spinRAF);
+        if (state.dropTimer) clearInterval(state.dropTimer);
+        if (state.dryingTimer) clearInterval(state.dryingTimer);
+        if (state.measureTimer) clearInterval(state.measureTimer);
+        state.spinRAF = 0;
+        state.dropTimer = 0;
+        state.dryingTimer = 0;
+        state.measureTimer = 0;
+      }
+
+      function buildDots() {
+        stepDots.innerHTML = '';
+        for (let i = 0; i < 9; i++) {
+          const d = document.createElement('div');
+          d.className = 'dot';
+          stepDots.appendChild(d);
+        }
+      }
+
+      function updateDots(step) {
+        [...stepDots.children].forEach((d, i) => {
+          d.classList.remove('active', 'done');
+          if (i + 1 < step) d.classList.add('done');
+          if (i + 1 === step) d.classList.add('active');
+        });
+      }
+
+      function hideAllSteps() {
+        Object.values(steps).forEach(group => setVisible(group, false));
+      }
+
+      function showStep(n) {
+        hideAllSteps();
+        setVisible(steps[n], true);
+        instructionText.textContent = stepMessages[n - 1];
+        updateDots(n);
+      }
+
+      function resetSilica() {
+        silicaParticles.forEach(s => {
+          const mesh = s.getObject3D('mesh');
+          if (mesh && mesh.material) mesh.material.color.set('#ff8c00');
+        });
+      }
+
+      function resetExperiment() {
+        clearTimers();
+        state.complete = false;
+        state.busy = false;
+        state.currentStep = 1;
+        state.vaporOn = false;
+        state.stirringOn = false;
+        state.dryingOn = false;
+        state.measureProgress = 0;
+        finalBadge.style.display = 'none';
+        restartWrap.style.display = 'none';
+        resetSilica();
+
+        const lentils = steps[1]?.querySelector('#plaLentils');
+        if (lentils) setVisible(lentils, true);
+
+        const drop = steps[3]?.querySelector('#acidDrop');
+        if (drop) {
+          drop.setAttribute('position', '0.50 0.42 0.06');
+          setVisible(drop, true);
+        }
+
+        const petriLiquid = steps[5]?.querySelector('#petriLiquid');
+        if (petriLiquid) setVisible(petriLiquid, false);
+
+        const insertedMembrane = steps[9]?.querySelector('#insertedMembrane');
+        if (insertedMembrane) setVisible(insertedMembrane, false);
+
+        drawEISCharts(0);
+        showStep(1);
+      }
+
+      function advanceStep() {
+        state.currentStep += 1;
+        if (state.currentStep <= 9) showStep(state.currentStep);
+        else finishExperiment();
+      }
+
+      function finishExperiment() {
+        state.complete = true;
+        instructionText.textContent = 'Experimento completado. Los resultados EIS se muestran en los paneles científicos.';
+        finalBadge.style.display = 'block';
+        restartWrap.style.display = 'block';
+        updateDots(9);
+      }
+
+      function spinElement(target, speed = 0.02) {
+        const spinner = target.querySelector('#stirrer2') || target.querySelector('#stirrer4') || target;
+        state.stirringOn = true;
+        const tick = () => {
+          if (!state.stirringOn) return;
+          spinner.object3D.rotation.y += speed;
+          if (state.vaporOn) {
+            vaporParticles.forEach(p => {
+              p.object3D.position.y += 0.012 + Math.random() * 0.008;
+              p.object3D.position.x += Math.sin(performance.now() * 0.001 + p.__seed) * 0.0015;
+              if (p.object3D.position.y > 1.1) {
+                p.object3D.position.y = 0.17 + Math.random() * 0.18;
+                p.object3D.position.x = p.__x;
+                p.object3D.position.z = p.__z;
+              }
+            });
+          }
+          state.spinRAF = requestAnimationFrame(tick);
+        };
+        cancelAnimationFrame(state.spinRAF);
+        tick();
+      }
+
+      function animateDrop(drop, done) {
+        if (state.dropTimer) clearInterval(state.dropTimer);
+        let y = 0.42;
+        state.dropTimer = setInterval(() => {
+          y -= 0.012;
+          drop.setAttribute('position', `0.50 ${y.toFixed(3)} 0.06`);
+          if (y <= 0.15) {
+            clearInterval(state.dropTimer);
+            state.dropTimer = 0;
+            if (done) done();
+          }
+        }, 50);
+      }
+
+      function animateDrying() {
+        if (state.dryingTimer) clearInterval(state.dryingTimer);
+        state.dryingOn = true;
+        let p = 0;
+        state.dryingTimer = setInterval(() => {
+          p = Math.min(1, p + 0.018);
+          silicaParticles.forEach((sphere, idx) => {
+            const mesh = sphere.getObject3D('mesh');
+            if (!mesh || !mesh.material) return;
+            const local = Math.min(1, p + idx * 0.008);
+            const r = Math.round(255 + (138 - 255) * local);
+            const g = Math.round(140 + (43 - 140) * local);
+            const b = Math.round(0 + (226 - 0) * local);
+            mesh.material.color.set(`rgb(${r},${g},${b})`);
+          });
+          if (p >= 1) {
+            clearInterval(state.dryingTimer);
+            state.dryingTimer = 0;
+            state.dryingOn = false;
+            advanceStep();
+          }
+        }, 120);
+      }
+
+      function updateCanvasTexture(planeEl) {
+        if (!planeEl) return;
+        const mesh = planeEl.getObject3D('mesh');
+        if (mesh && mesh.material && mesh.material.map) {
+          mesh.material.map.needsUpdate = true;
+          mesh.material.needsUpdate = true;
+        }
+      }
+
+      function animateEISMeasurement(nyquistPlane, bodePlane) {
+        if (state.measureTimer) clearInterval(state.measureTimer);
+        state.measureProgress = 0;
+        state.measureTimer = setInterval(() => {
+          state.measureProgress = Math.min(1, state.measureProgress + 0.02);
+          drawEISCharts(state.measureProgress);
+          updateCanvasTexture(nyquistPlane);
+          updateCanvasTexture(bodePlane);
+          if (state.measureProgress >= 1) {
+            clearInterval(state.measureTimer);
+            state.measureTimer = 0;
+            advanceStep();
+          }
+        }, 100);
+      }
+
+      function makeFlaskGroup(id, withSolution = false) {
+        const g = mk('a-entity', { id, position: '0 0 0' }, null);
+        const body = mk('a-sphere', { radius: '0.19', scale: '1 0.86 1', material: glass('#9de9ff', 0.20) }, g);
+        const shoulder = mk('a-cone', { radiusBottom: '0.17', radiusTop: '0.20', height: '0.11', position: '0 0.09 0', material: glass('#9de9ff', 0.16) }, g);
+        const neck = mk('a-cylinder', { radius: '0.055', height: '0.28', position: '0 0.24 0', material: glass('#e8fdff', 0.18) }, g);
+        const lip = mk('a-cylinder', { radius: '0.06', height: '0.02', position: '0 0.38 0', color: '#c9d6df', material: 'metalness: 0.76; roughness: 0.24' }, g);
+        if (withSolution) {
+          mk('a-sphere', { radius: '0.155', scale: '1 0.66 1', position: '0 -0.035 0', color: '#69a8ff', material: 'opacity: 0.42; transparent: true; roughness: 0.22' }, g);
+        }
+        return g;
+      }
+
+      function buildStep1() {
+        const g = mk('a-entity', { id: 'step1', visible: 'true', position: '0 0 0' }, null);
+        mk('a-cylinder', { position: '0 -0.02 0', radius: '0.43', height: '0.02', color: '#1d2730', material: 'opacity: 0.75; transparent: true; roughness: 0.6' }, g);
+        mk('a-box', { position: '0 0.02 0', width: '0.62', height: '0.08', depth: '0.42', color: '#6f7782', material: 'metalness: 0.55; roughness: 0.32' }, g);
+        mk('a-box', { position: '0 0.12 0', width: '0.48', height: '0.04', depth: '0.28', color: '#3d434d', material: 'metalness: 0.4; roughness: 0.28' }, g);
+        const scale = mk('a-box', { id: 'scale', position: '0 0.20 0', width: '0.22', height: '0.10', depth: '0.18', color: '#aab4be', material: 'metalness: 0.22; roughness: 0.38' }, g);
+        mk('a-box', { position: '0 0.25 0', width: '0.12', height: '0.02', depth: '0.12', color: '#d4dbe2', material: 'metalness: 0.4; roughness: 0.28' }, scale);
+        const dish = mk('a-cylinder', { position: '0 0.23 0', radius: '0.08', height: '0.018', color: '#22272c', material: 'opacity: 0.6; transparent: true' }, g);
+        const plaLentils = mk('a-entity', { id: 'plaLentils', position: '0 0.28 0' }, g);
+        for (let i = 0; i < 3; i++) {
+          mk('a-sphere', {
+            radius: '0.028',
+            position: `${-0.04 + i * 0.04} 0 ${-0.01 + (i % 2) * 0.03}`,
+            color: '#f6f9fb',
+            material: 'metalness: 0.05; roughness: 0.9; opacity: 0.98'
+          }, plaLentils);
+        }
+        mk('a-torus', { position: '0 0.07 0', rotation: '90 0 0', radius: '0.18', radiusTubular: '0.007', color: '#8fe7ff', material: 'opacity: 0.14; transparent: true' }, g);
+        createText('1 g PLA', '0 0.45 0', '0.20');
+        registerClickable(scale);
+        steps[1] = g;
+        labRoot.appendChild(g);
+      }
+
+      function buildStep2() {
+        const g = mk('a-entity', { id: 'step2', visible: 'false' }, null);
+        const flask = makeFlaskGroup('flaskDissolution', true);
+        flask.setAttribute('position', '0 0.02 0');
+        mk('a-cylinder', { id: 'stirrer2', position: '0 0.00 0', radius: '0.045', height: '0.02', color: '#f4fbff', material: 'metalness: 0.12; roughness: 0.4' }, flask);
+        for (let i = 0; i < 3; i++) {
+          mk('a-torus', { position: `0 ${0.42 + i * 0.12} 0`, rotation: '90 0 0', radius: '0.065', radiusTubular: '0.011', color: '#58d0ff', material: 'opacity: 0.8; transparent: true; metalness: 0.15; roughness: 0.25' }, flask);
+        }
+        createText('Reflujo', '0 0.95 0', '0.21');
+        for (let i = 0; i < 30; i++) {
+          const p = mk('a-sphere', {
+            radius: '0.012',
+            position: `${(-0.13 + Math.random() * 0.26).toFixed(3)} ${(0.18 + Math.random() * 0.34).toFixed(3)} ${(-0.13 + Math.random() * 0.26).toFixed(3)}`,
+            color: '#d7f3ff',
+            material: 'opacity: 0.55; transparent: true; emissive: #8edcff; emissiveIntensity: 0.10'
+          }, flask);
+          p.__x = parseFloat(p.getAttribute('position').x || 0);
+          p.__z = parseFloat(p.getAttribute('position').z || 0);
+          p.__seed = Math.random() * 10;
+          vaporParticles.push(p);
+        }
+        g.appendChild(flask);
+        registerClickable(flask);
+        steps[2] = g;
+        labRoot.appendChild(g);
+      }
+
+      function buildStep3() {
+        const g = mk('a-entity', { id: 'step3', visible: 'false' }, null);
+        const flask = makeFlaskGroup('flaskAcid', true);
+        flask.setAttribute('position', '-0.05 0.02 0');
+        mk('a-sphere', { radius: '0.155', scale: '1 0.66 1', position: '0 -0.035 0', color: '#6aaeff', material: 'opacity: 0.42; transparent: true; roughness: 0.20' }, flask);
+        const pipette = mk('a-entity', { id: 'pipette', position: '0.52 0.20 0.10', rotation: '0 0 22' }, g);
+        mk('a-cylinder', { radius: '0.032', height: '0.40', rotation: '0 0 90', color: '#d59c40', material: 'metalness: 0.18; roughness: 0.34' }, pipette);
+        mk('a-cone', { radiusBottom: '0.032', radiusTop: '0.004', height: '0.16', position: '-0.23 0 0', rotation: '0 0 90', color: '#b9c0c8', material: 'metalness: 0.76; roughness: 0.22' }, pipette);
+        mk('a-box', { width: '0.06', height: '0.10', depth: '0.04', position: '0.05 0.02 0', rotation: '0 0 15', color: '#ebd08f', material: 'metalness: 0.05; roughness: 0.55' }, pipette);
+        const drop = mk('a-sphere', { id: 'acidDrop', radius: '0.030', position: '0.48 0.42 0.08', color: '#ff9d39', material: 'emissive: #ff7a2f; emissiveIntensity: 0.15; roughness: 0.5' }, g);
+        createText('H₃PO₂', '0.55 0.34 0', '0.19', '#ffc38a');
+        g.appendChild(flask);
+        g.appendChild(pipette);
+        g.appendChild(drop);
+        registerClickable(pipette);
+        steps[3] = g;
+        labRoot.appendChild(g);
+      }
+
+      function buildStep4() {
+        const g = mk('a-entity', { id: 'step4', visible: 'false' }, null);
+        const flask = makeFlaskGroup('flaskStirring', true);
+        flask.setAttribute('position', '0 0.02 0');
+        mk('a-cylinder', { id: 'stirrer4', position: '0 0.00 0', radius: '0.045', height: '0.02', color: '#f4fbff', material: 'metalness: 0.10; roughness: 0.42' }, flask);
+        createText('16 h', '0 0.45 0', '0.21');
+        createText('Agitación prolongada', '0 -0.45 0', '0.16', '#bdefff');
+        g.appendChild(flask);
+        registerClickable(flask);
+        steps[4] = g;
+        labRoot.appendChild(g);
+      }
+
+      function buildStep5() {
+        const g = mk('a-entity', { id: 'step5', visible: 'false' }, null);
+        const flask = makeFlaskGroup('flaskPouring', true);
+        flask.setAttribute('position', '-0.32 0.10 0.05');
+        flask.setAttribute('rotation', '0 0 18');
+        const stream = mk('a-cylinder', { position: '0.16 -0.10 0', rotation: '90 0 0', radius: '0.012', height: '0.34', color: '#82c2ff', material: 'opacity: 0.36; transparent: true; roughness: 0.18' }, flask);
+        const petri = mk('a-entity', { position: '0.42 0.02 0' }, g);
+        mk('a-cylinder', { radius: '0.22', height: '0.036', color: '#e9f0f5', material: 'opacity: 0.45; transparent: true; roughness: 0.25; metalness: 0.12' }, petri);
+        mk('a-cylinder', { radius: '0.18', height: '0.010', position: '0 0.02 0', color: '#7bbdff', material: 'opacity: 0.00; transparent: true' }, petri);
+        const petriLiquid = mk('a-cylinder', { id: 'petriLiquid', radius: '0.18', height: '0.012', position: '0 0.02 0', color: '#6daefc', material: 'opacity: 0.56; transparent: true; roughness: 0.20' }, petri);
+        setVisible(petriLiquid, false);
+        createText('Placa Petri', '0.42 0.32 0', '0.17');
+        g.appendChild(flask);
+        g.appendChild(petri);
+        registerClickable(flask);
+        steps[5] = g;
+        labRoot.appendChild(g);
+      }
+
+      function buildStep6() {
+        const g = mk('a-entity', { id: 'step6', visible: 'false' }, null);
+        const des = mk('a-entity', { id: 'desiccator', position: '0 0.06 0' }, g);
+        mk('a-sphere', { radius: '0.28', scale: '1 0.72 1', position: '0 0.18 0', material: glass('#b6f5ff', 0.16) }, des);
+        mk('a-cylinder', { radius: '0.28', height: '0.06', position: '0 -0.01 0', color: '#7f8891', material: 'metalness: 0.36; roughness: 0.38' }, des);
+        mk('a-cylinder', { radius: '0.18', height: '0.015', position: '0 0.03 0', color: '#dce6ee', material: 'opacity: 0.60; transparent: true' }, des);
+        mk('a-cylinder', { radius: '0.14', height: '0.010', position: '0 0.045 0', color: '#68e99a', material: 'opacity: 0.52; transparent: true; roughness: 0.22' }, des);
+        for (let i = 0; i < 20; i++) {
+          const ang = (Math.PI * 2 * i) / 20;
+          const x = Math.cos(ang) * 0.20;
+          const z = Math.sin(ang) * 0.20;
+          const sph = mk('a-sphere', { radius: '0.016', position: `${x.toFixed(3)} 0.08 ${z.toFixed(3)}`, color: '#ff8c00', material: 'metalness: 0.08; roughness: 0.70' }, des);
+          silicaParticles.push(sph);
+        }
+        mk('a-cylinder', { radius: '0.12', height: '0.010', position: '0 0.05 0', color: '#8cf0b6', material: 'opacity: 0.18; transparent: true' }, des);
+        createText('Secado 24 h', '0 0.50 0', '0.20');
+        g.appendChild(des);
+        registerClickable(des);
+        steps[6] = g;
+        labRoot.appendChild(g);
+      }
+
+      function buildStep7() {
+        const g = mk('a-entity', { id: 'step7', visible: 'false' }, null);
+        const disc = mk('a-cylinder', { id: 'membraneDisc', radius: '0.15', height: '0.013', rotation: '90 0 0', position: '-0.05 0.06 0', color: '#5ce699', material: 'opacity: 0.56; transparent: true; roughness: 0.20' }, g);
+        const caliper = mk('a-entity', { position: '0.26 0.08 0', rotation: '0 -16 0' }, g);
+        mk('a-box', { width: '0.36', height: '0.04', depth: '0.06', color: '#7f8891', material: 'metalness: 0.46; roughness: 0.32' }, caliper);
+        mk('a-box', { width: '0.06', height: '0.09', depth: '0.05', position: '-0.17 0.01 0', color: '#c8d1da', material: 'metalness: 0.80; roughness: 0.20' }, caliper);
+        mk('a-box', { width: '0.06', height: '0.09', depth: '0.05', position: '0.17 0.01 0', color: '#c8d1da', material: 'metalness: 0.80; roughness: 0.20' }, caliper);
+        mk('a-cylinder', { radius: '0.10', height: '0.010', position: '0.00 -0.01 0', color: '#0f1720', material: 'opacity: 0.35; transparent: true' }, g);
+        createText('Corte del disco', '0 0.48 0', '0.19');
+        g.appendChild(disc);
+        g.appendChild(caliper);
+        registerClickable(disc);
+        steps[7] = g;
+        labRoot.appendChild(g);
+      }
+
+      function buildStep8() {
+        const g = mk('a-entity', { id: 'step8', visible: 'false' }, null);
+        const cell = mk('a-entity', { id: 'eisCell', position: '0 0.07 0' }, g);
+        mk('a-box', { width: '0.46', height: '0.46', depth: '0.46', color: '#8ce7ff', material: 'opacity: 0.17; transparent: true; metalness: 0.12; roughness: 0.12; side: double' }, cell);
+        mk('a-cylinder', { radius: '0.13', height: '0.010', rotation: '90 0 0', position: '0 -0.11 0', color: '#69f0a8', material: 'opacity: 0.52; transparent: true' }, cell);
+        mk('a-cylinder', { radius: '0.02', height: '0.30', position: '-0.12 0.01 0', color: '#7f8891', material: 'metalness: 0.74; roughness: 0.24' }, cell);
+        mk('a-cylinder', { radius: '0.017', height: '0.28', position: '0.02 0.01 0', color: '#eff7ff', material: 'metalness: 0.58; roughness: 0.20' }, cell);
+        mk('a-cylinder', { radius: '0.022', height: '0.33', position: '0.14 0.01 0', color: '#d4dbe2', material: 'metalness: 0.84; roughness: 0.18' }, cell);
+        mk('a-cylinder', { radius: '0.10', height: '0.012', position: '0 -0.11 0', color: '#5ce699', material: 'opacity: 0.22; transparent: true' }, cell);
+        createText('Montaje EIS', '0 0.50 0', '0.19');
+        g.appendChild(cell);
+        registerClickable(cell);
+        steps[8] = g;
+        labRoot.appendChild(g);
+      }
+
+      function buildStep9() {
+        const g = mk('a-entity', { id: 'step9', visible: 'false' }, null);
+        const cell = mk('a-entity', { id: 'eisCellMeasure', position: '-0.48 0.04 0' }, g);
+        mk('a-box', { width: '0.44', height: '0.44', depth: '0.44', color: '#8ce7ff', material: 'opacity: 0.17; transparent: true; metalness: 0.12; roughness: 0.12; side: double' }, cell);
+        mk('a-cylinder', { id: 'insertedMembrane', radius: '0.13', height: '0.010', rotation: '90 0 0', position: '0 -0.11 0', color: '#69f0a8', material: 'opacity: 0.58; transparent: true' }, cell);
+        mk('a-cylinder', { radius: '0.02', height: '0.30', position: '-0.12 0.01 0', color: '#7f8891', material: 'metalness: 0.74; roughness: 0.24' }, cell);
+        mk('a-cylinder', { radius: '0.017', height: '0.28', position: '0.02 0.01 0', color: '#eff7ff', material: 'metalness: 0.58; roughness: 0.20' }, cell);
+        mk('a-cylinder', { radius: '0.022', height: '0.33', position: '0.14 0.01 0', color: '#d4dbe2', material: 'metalness: 0.84; roughness: 0.18' }, cell);
+        const nyquistPlane = mk('a-plane', { id: 'nyquistPlane', width: '0.78', height: '0.78', position: '0.55 0.35 0', material: 'shader: flat; src: #nyquistCanvas; transparent: true; side: double; opacity: 1' }, g);
+        const bodePlane = mk('a-plane', { id: 'bodePlane', width: '0.78', height: '0.39', position: '0.55 -0.15 0', material: 'shader: flat; src: #bodeCanvas; transparent: true; side: double; opacity: 1' }, g);
+        mk('a-plane', { width: '1.00', height: '0.02', position: '0.55 0.04 0.01', color: '#1f2a35', material: 'opacity: 0.30; transparent: true' }, g);
+        createText('Nyquist', '0.55 0.80 0.01', '0.20');
+        createText('Bode', '0.55 0.08 0.01', '0.20');
+        createText('Rs = 10.2 Ω   ·   Rct = 48.7 Ω   ·   Cdl = 12.5 µF', '0 0.63 0.02', '0.16', '#eaf4ff');
+        createText('Rango: 10 mHz a 100 kHz', '0 0.48 0.02', '0.15', '#bdf8da');
+        registerClickable(cell);
+        steps[9] = g;
+        labRoot.appendChild(g);
+        return { nyquistPlane, bodePlane };
+      }
+
+      function drawAxes(ctx, w, h, pad) {
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#081018';
+        ctx.fillRect(0, 0, w, h);
+        const grd = ctx.createLinearGradient(0, 0, w, h);
+        grd.addColorStop(0, 'rgba(107,213,255,0.08)');
+        grd.addColorStop(1, 'rgba(157,255,191,0.08)');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, w, h);
+        ctx.strokeStyle = 'rgba(234,244,255,0.16)';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.rect(pad, pad * 0.55, w - pad * 1.3, h - pad * 1.1);
+        ctx.stroke();
+      }
+
+      function drawNyquist(progress) {
+        const ctx = nyquistCtx;
+        const w = nyquistCanvas.width;
+        const h = nyquistCanvas.height;
+        const pad = 54;
+        drawAxes(ctx, w, h, pad);
+
+        const pts = [];
+        for (let i = 0; i < model.points; i++) {
+          const f = model.fMin * Math.pow(model.fMax / model.fMin, i / (model.points - 1));
+          const omega = 2 * Math.PI * f;
+          const x = omega * model.Rct * model.Cdl;
+          const zr = model.Rs + model.Rct / (1 + x * x);
+          const zi = -(model.Rct * omega * model.Rct * model.Cdl) / (1 + x * x);
+          pts.push({ zr, zi });
+        }
+
+        const n = Math.max(2, Math.floor(progress * pts.length));
+        const slice = pts.slice(0, n);
+        const minX = Math.min(...pts.map(p => p.zr)) - 2;
+        const maxX = Math.max(...pts.map(p => p.zr)) + 2;
+        const maxY = Math.max(...pts.map(p => -p.zi)) * 1.1 + 1;
+        const plotW = w - pad * 1.45;
+        const plotH = h - pad * 1.05;
+        const x0 = pad;
+        const y0 = h - pad * 0.55;
+        const mapX = v => x0 + ((v - minX) / (maxX - minX)) * plotW;
+        const mapY = v => y0 - (v / maxY) * plotH;
+
+        ctx.strokeStyle = 'rgba(234,244,255,0.52)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x0 + plotW, y0);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x0, y0);
+        ctx.lineTo(x0, y0 - plotH);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(234,244,255,0.84)';
+        ctx.font = '18px Segoe UI, Roboto, system-ui';
+        ctx.fillText("Z' (Ω)", w - 88, h - 16);
+        ctx.save();
+        ctx.translate(12, 34);
+        ctx.rotate(-Math.PI / 2);
+        ctx.fillText("-Z'' (Ω)", 0, 0);
+        ctx.restore();
+
+        ctx.strokeStyle = 'rgba(107,213,255,0.96)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        slice.forEach((p, i) => {
+          const px = mapX(p.zr);
+          const py = mapY(-p.zi);
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        });
+        ctx.stroke();
+
+        ctx.fillStyle = '#9dffbf';
+        slice.forEach((p, i) => {
+          if (i % 8 === 0 || i === slice.length - 1) {
+            const px = mapX(p.zr);
+            const py = mapY(-p.zi);
+            ctx.beginPath();
+            ctx.arc(px, py, 3.2, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        });
+
+        const last = slice[slice.length - 1] || pts[0];
+        ctx.fillStyle = '#eaf4ff';
+        ctx.font = '16px Segoe UI, Roboto, system-ui';
+        ctx.fillText(`p = ${(progress * 100).toFixed(0)}%`, w - 106, 28);
+        ctx.fillText(`Z' = ${last.zr.toFixed(2)} Ω`, 18, 22);
+        ctx.fillText(`-Z'' = ${(-last.zi).toFixed(2)} Ω`, 18, 42);
+      }
+
+      function drawBode(progress) {
+        const ctx = bodeCtx;
+        const w = bodeCanvas.width;
+        const h = bodeCanvas.height;
+        const pad = 34;
+        drawAxes(ctx, w, h, pad);
+
+        const pts = [];
+        for (let i = 0; i < model.points; i++) {
+          const f = model.fMin * Math.pow(model.fMax / model.fMin, i / (model.points - 1));
+          const omega = 2 * Math.PI * f;
+          const x = omega * model.Rct * model.Cdl;
+          const zr = model.Rs + model.Rct / (1 + x * x);
+          const zi = -(model.Rct * omega * model.Rct * model.Cdl) / (1 + x * x);
+          const mag = Math.sqrt(zr * zr + zi * zi);
+          const phase = Math.atan2(zi, zr) * 180 / Math.PI;
+          pts.push({ f, mag, phase });
+        }
+
+        const n = Math.max(2, Math.floor(progress * pts.length));
+        const slice = pts.slice(0, n);
+        const topY0 = h * 0.43;
+        const bottomY0 = h - 22;
+        const plotW = w - pad * 1.2;
+        const plotH1 = h * 0.33;
+        const plotH2 = h * 0.24;
+        const x0 = pad;
+        const mapX = f => x0 + ((Math.log10(f) - Math.log10(model.fMin)) / (Math.log10(model.fMax) - Math.log10(model.fMin))) * plotW;
+
+        const mags = pts.map(p => Math.log10(p.mag));
+        const phases = pts.map(p => p.phase);
+        const minM = Math.min(...mags) - 0.06;
+        const maxM = Math.max(...mags) + 0.06;
+        const minP = Math.min(...phases) - 6;
+        const maxP = Math.max(...phases) + 6;
+        const mapY1 = v => topY0 - ((v - minM) / (maxM - minM)) * plotH1;
+        const mapY2 = v => bottomY0 - ((v - minP) / (maxP - minP)) * plotH2;
+
+        ctx.strokeStyle = 'rgba(234,244,255,0.52)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(x0, topY0);
+        ctx.lineTo(x0 + plotW, topY0);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(x0, bottomY0);
+        ctx.lineTo(x0 + plotW, bottomY0);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(234,244,255,0.84)';
+        ctx.font = '16px Segoe UI, Roboto, system-ui';
+        ctx.fillText('log|Z|', 8, 18);
+        ctx.fillText('fase (°)', 8, h - 5);
+        ctx.fillText('log f (Hz)', w - 102, h - 5);
+
+        ctx.strokeStyle = 'rgba(157,255,191,0.96)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        slice.forEach((p, i) => {
+          const px = mapX(p.f);
+          const py = mapY1(Math.log10(p.mag));
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        });
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(107,213,255,0.92)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        slice.forEach((p, i) => {
+          const px = mapX(p.f);
+          const py = mapY2(p.phase);
+          if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+        });
+        ctx.stroke();
+
+        const last = slice[slice.length - 1] || pts[0];
+        ctx.fillStyle = '#eaf4ff';
+        ctx.font = '16px Segoe UI, Roboto, system-ui';
+        ctx.fillText(`p = ${(progress * 100).toFixed(0)}%`, w - 96, 18);
+        ctx.fillText(`|Z| = ${last.mag.toFixed(2)} Ω`, 160, 18);
+        ctx.fillText(`φ = ${last.phase.toFixed(1)}°`, 296, 18);
+      }
+
+      function drawEISCharts(progress) {
+        drawNyquist(progress);
+        drawBode(progress);
+      }
+
+      function buildAllSteps() {
+        // STEP 1
+        const s1 = mk('a-entity', { id: 'step1', visible: 'true' }, null);
+        mk('a-cylinder', { position: '0 -0.03 0', radius: '0.44', height: '0.02', color: '#1c2730', material: 'opacity: 0.75; transparent: true' }, s1);
+        mk('a-box', { position: '0 0.03 0', width: '0.64', height: '0.08', depth: '0.42', color: '#6f7782', material: 'metalness: 0.55; roughness: 0.32' }, s1);
+        const scale = mk('a-box', { id: 'scale', position: '0 0.20 0', width: '0.22', height: '0.10', depth: '0.18', color: '#aab4be', material: 'metalness: 0.22; roughness: 0.38' }, s1);
+        mk('a-box', { position: '0 0.25 0', width: '0.12', height: '0.02', depth: '0.12', color: '#d4dbe2', material: 'metalness: 0.4; roughness: 0.28' }, scale);
+        const pla = mk('a-entity', { id: 'plaLentils', position: '0 0.28 0' }, s1);
+        for (let i = 0; i < 3; i++) {
+          mk('a-sphere', { radius: '0.028', position: `${-0.04 + i * 0.04} 0 ${-0.01 + (i % 2) * 0.03}`, color: '#f6f9fb', material: 'metalness: 0.05; roughness: 0.9; opacity: 0.98' }, pla);
+        }
+        createText('1 g PLA', '0 0.46 0', '0.20');
+        registerClickable(scale);
+        steps[1] = s1;
+        labRoot.appendChild(s1);
+
+        // STEP 2
+        const s2 = mk('a-entity', { id: 'step2', visible: 'false' }, null);
+        const flask2 = mk('a-entity', { id: 'flaskDissolution', position: '0 0.02 0' }, s2);
+        mk('a-sphere', { radius: '0.19', scale: '1 0.86 1', material: glass('#9de9ff', 0.20) }, flask2);
+        mk('a-cone', { radiusBottom: '0.17', radiusTop: '0.20', height: '0.11', position: '0 0.09 0', material: glass('#9de9ff', 0.16) }, flask2);
+        mk('a-cylinder', { radius: '0.055', height: '0.28', position: '0 0.24 0', material: glass('#e8fdff', 0.18) }, flask2);
+        mk('a-cylinder', { id: 'stirrer2', radius: '0.045', height: '0.02', position: '0 0 0', color: '#f4fbff', material: 'metalness: 0.12; roughness: 0.4' }, flask2);
+        mk('a-sphere', { radius: '0.155', scale: '1 0.66 1', position: '0 -0.035 0', color: '#6db8ff', material: 'opacity: 0.40; transparent: true; roughness: 0.20' }, flask2);
+        for (let i = 0; i < 3; i++) mk('a-torus', { position: `0 ${0.42 + i * 0.12} 0`, rotation: '90 0 0', radius: '0.065', radiusTubular: '0.011', color: '#58d0ff', material: 'opacity: 0.80; transparent: true' }, flask2);
+        for (let i = 0; i < 30; i++) {
+          const p = mk('a-sphere', { radius: '0.012', position: `${(-0.13 + Math.random() * 0.26).toFixed(3)} ${(0.18 + Math.random() * 0.34).toFixed(3)} ${(-0.13 + Math.random() * 0.26).toFixed(3)}`, color: '#d7f3ff', material: 'opacity: 0.55; transparent: true; emissive: #8edcff; emissiveIntensity: 0.10' }, flask2);
+          p.__x = parseFloat(p.getAttribute('position').x || 0);
+          p.__z = parseFloat(p.getAttribute('position').z || 0);
+          p.__seed = Math.random() * 10;
+          vaporParticles.push(p);
+        }
+        createText('Reflujo', '0 0.96 0', '0.21');
+        registerClickable(flask2);
+        steps[2] = s2;
+        labRoot.appendChild(s2);
+
+        // STEP 3
+        const s3 = mk('a-entity', { id: 'step3', visible: 'false' }, null);
+        const flask3 = mk('a-entity', { id: 'flaskAcid', position: '-0.05 0.02 0' }, s3);
+        mk('a-sphere', { radius: '0.19', scale: '1 0.86 1', material: glass('#9de9ff', 0.20) }, flask3);
+        mk('a-cone', { radiusBottom: '0.17', radiusTop: '0.20', height: '0.11', position: '0 0.09 0', material: glass('#9de9ff', 0.16) }, flask3);
+        mk('a-cylinder', { radius: '0.055', height: '0.28', position: '0 0.24 0', material: glass('#e8fdff', 0.18) }, flask3);
+        mk('a-sphere', { radius: '0.155', scale: '1 0.66 1', position: '0 -0.035 0', color: '#6db8ff', material: 'opacity: 0.40; transparent: true; roughness: 0.20' }, flask3);
+        const pipette = mk('a-entity', { id: 'pipette', position: '0.52 0.20 0.10', rotation: '0 0 22' }, s3);
+        mk('a-cylinder', { radius: '0.032', height: '0.40', rotation: '0 0 90', color: '#d59c40', material: 'metalness: 0.18; roughness: 0.34' }, pipette);
+        mk('a-cone', { radiusBottom: '0.032', radiusTop: '0.004', height: '0.16', position: '-0.23 0 0', rotation: '0 0 90', color: '#b9c0c8', material: 'metalness: 0.76; roughness: 0.22' }, pipette);
+        mk('a-box', { width: '0.06', height: '0.10', depth: '0.04', position: '0.05 0.02 0', rotation: '0 0 15', color: '#ebd08f', material: 'metalness: 0.05; roughness: 0.55' }, pipette);
+        mk('a-sphere', { id: 'acidDrop', radius: '0.030', position: '0.50 0.42 0.06', color: '#ff9d39', material: 'emissive: #ff7a2f; emissiveIntensity: 0.15; roughness: 0.5' }, s3);
+        createText('H₃PO₂', '0.56 0.34 0', '0.19', '#ffc38a');
+        registerClickable(pipette);
+        steps[3] = s3;
+        labRoot.appendChild(s3);
+
+        // STEP 4
+        const s4 = mk('a-entity', { id: 'step4', visible: 'false' }, null);
+        const flask4 = mk('a-entity', { id: 'flaskStirring', position: '0 0.02 0' }, s4);
+        mk('a-sphere', { radius: '0.19', scale: '1 0.86 1', material: glass('#9de9ff', 0.20) }, flask4);
+        mk('a-cone', { radiusBottom: '0.17', radiusTop: '0.20', height: '0.11', position: '0 0.09 0', material: glass('#9de9ff', 0.16) }, flask4);
+        mk('a-cylinder', { radius: '0.055', height: '0.28', position: '0 0.24 0', material: glass('#e8fdff', 0.18) }, flask4);
+        mk('a-sphere', { radius: '0.155', scale: '1 0.66 1', position: '0 -0.035 0', color: '#69adff', material: 'opacity: 0.42; transparent: true; roughness: 0.20' }, flask4);
+        mk('a-cylinder', { id: 'stirrer4', radius: '0.045', height: '0.02', position: '0 0 0', color: '#f4fbff', material: 'metalness: 0.10; roughness: 0.42' }, flask4);
+        createText('16 h', '0 0.48 0', '0.22');
+        createText('Agitación prolongada', '0 -0.45 0', '0.16', '#bdefff');
+        registerClickable(flask4);
+        steps[4] = s4;
+        labRoot.appendChild(s4);
+
+        // STEP 5
+        const s5 = mk('a-entity', { id: 'step5', visible: 'false' }, null);
+        const flask5 = mk('a-entity', { id: 'flaskPouring', position: '-0.32 0.10 0.05', rotation: '0 0 18' }, s5);
+        mk('a-sphere', { radius: '0.19', scale: '1 0.86 1', material: glass('#9de9ff', 0.20) }, flask5);
+        mk('a-cone', { radiusBottom: '0.17', radiusTop: '0.20', height: '0.11', position: '0 0.09 0', material: glass('#9de9ff', 0.16) }, flask5);
+        mk('a-cylinder', { radius: '0.055', height: '0.28', position: '0 0.24 0', material: glass('#e8fdff', 0.18) }, flask5);
+        mk('a-cylinder', { position: '0.16 -0.10 0', rotation: '90 0 0', radius: '0.012', height: '0.34', color: '#82c2ff', material: 'opacity: 0.36; transparent: true; roughness: 0.18' }, flask5);
+        const petri = mk('a-entity', { position: '0.42 0.02 0' }, s5);
+        mk('a-cylinder', { radius: '0.22', height: '0.036', color: '#e9f0f5', material: 'opacity: 0.45; transparent: true; roughness: 0.25; metalness: 0.12' }, petri);
+        const petriLiquid = mk('a-cylinder', { id: 'petriLiquid', radius: '0.18', height: '0.012', position: '0 0.02 0', color: '#6daefc', material: 'opacity: 0.56; transparent: true; roughness: 0.20' }, petri);
+        setVisible(petriLiquid, false);
+        createText('Placa Petri', '0.42 0.32 0', '0.17');
+        registerClickable(flask5);
+        steps[5] = s5;
+        labRoot.appendChild(s5);
+
+        // STEP 6
+        const s6 = mk('a-entity', { id: 'step6', visible: 'false' }, null);
+        const des = mk('a-entity', { id: 'desiccator', position: '0 0.06 0' }, s6);
+        mk('a-sphere', { radius: '0.28', scale: '1 0.72 1', position: '0 0.18 0', material: glass('#b6f5ff', 0.16) }, des);
+        mk('a-cylinder', { radius: '0.28', height: '0.06', position: '0 -0.01 0', color: '#7f8891', material: 'metalness: 0.36; roughness: 0.38' }, des);
+        mk('a-cylinder', { radius: '0.18', height: '0.015', position: '0 0.03 0', color: '#dce6ee', material: 'opacity: 0.60; transparent: true' }, des);
+        mk('a-cylinder', { radius: '0.14', height: '0.010', position: '0 0.045 0', color: '#68e99a', material: 'opacity: 0.52; transparent: true; roughness: 0.22' }, des);
+        mk('a-cylinder', { radius: '0.12', height: '0.010', position: '0 0.05 0', color: '#8cf0b6', material: 'opacity: 0.18; transparent: true' }, des);
+        for (let i = 0; i < 20; i++) {
+          const ang = (Math.PI * 2 * i) / 20;
+          const x = Math.cos(ang) * 0.20;
+          const z = Math.sin(ang) * 0.20;
+          const sph = mk('a-sphere', { radius: '0.016', position: `${x.toFixed(3)} 0.08 ${z.toFixed(3)}`, color: '#ff8c00', material: 'metalness: 0.08; roughness: 0.70' }, des);
+          silicaParticles.push(sph);
+        }
+        createText('Secado 24 h', '0 0.52 0', '0.20');
+        registerClickable(des);
+        steps[6] = s6;
+        labRoot.appendChild(s6);
+
+        // STEP 7
+        const s7 = mk('a-entity', { id: 'step7', visible: 'false' }, null);
+        const disc = mk('a-cylinder', { id: 'membraneDisc', radius: '0.15', height: '0.013', rotation: '90 0 0', position: '-0.05 0.06 0', color: '#5ce699', material: 'opacity: 0.56; transparent: true; roughness: 0.20' }, s7);
+        const caliper = mk('a-entity', { position: '0.26 0.08 0', rotation: '0 -16 0' }, s7);
+        mk('a-box', { width: '0.36', height: '0.04', depth: '0.06', color: '#7f8891', material: 'metalness: 0.46; roughness: 0.32' }, caliper);
+        mk('a-box', { width: '0.06', height: '0.09', depth: '0.05', position: '-0.17 0.01 0', color: '#c8d1da', material: 'metalness: 0.80; roughness: 0.20' }, caliper);
+        mk('a-box', { width: '0.06', height: '0.09', depth: '0.05', position: '0.17 0.01 0', color: '#c8d1da', material: 'metalness: 0.80; roughness: 0.20' }, caliper);
+        createText('Corte del disco', '0 0.48 0', '0.19');
+        registerClickable(disc);
+        steps[7] = s7;
+        labRoot.appendChild(s7);
+
+        // STEP 8
+        const s8 = mk('a-entity', { id: 'step8', visible: 'false' }, null);
+        const cell8 = mk('a-entity', { id: 'eisCell', position: '0 0.07 0' }, s8);
+        mk('a-box', { width: '0.46', height: '0.46', depth: '0.46', color: '#8ce7ff', material: 'opacity: 0.17; transparent: true; metalness: 0.12; roughness: 0.12; side: double' }, cell8);
+        mk('a-cylinder', { radius: '0.13', height: '0.010', rotation: '90 0 0', position: '0 -0.11 0', color: '#69f0a8', material: 'opacity: 0.52; transparent: true' }, cell8);
+        mk('a-cylinder', { radius: '0.02', height: '0.30', position: '-0.12 0.01 0', color: '#7f8891', material: 'metalness: 0.74; roughness: 0.24' }, cell8);
+        mk('a-cylinder', { radius: '0.017', height: '0.28', position: '0.02 0.01 0', color: '#eff7ff', material: 'metalness: 0.58; roughness: 0.20' }, cell8);
+        mk('a-cylinder', { radius: '0.022', height: '0.33', position: '0.14 0.01 0', color: '#d4dbe2', material: 'metalness: 0.84; roughness: 0.18' }, cell8);
+        createText('Montaje EIS', '0 0.52 0', '0.19');
+        registerClickable(cell8);
+        steps[8] = s8;
+        labRoot.appendChild(s8);
+
+        // STEP 9
+        const s9 = mk('a-entity', { id: 'step9', visible: 'false' }, null);
+        const cell9 = mk('a-entity', { id: 'eisCellMeasure', position: '-0.48 0.04 0' }, s9);
+        mk('a-box', { width: '0.44', height: '0.44', depth: '0.44', color: '#8ce7ff', material: 'opacity: 0.17; transparent: true; metalness: 0.12; roughness: 0.12; side: double' }, cell9);
+        mk('a-cylinder', { id: 'insertedMembrane', radius: '0.13', height: '0.010', rotation: '90 0 0', position: '0 -0.11 0', color: '#69f0a8', material: 'opacity: 0.58; transparent: true' }, cell9);
+        mk('a-cylinder', { radius: '0.02', height: '0.30', position: '-0.12 0.01 0', color: '#7f8891', material: 'metalness: 0.74; roughness: 0.24' }, cell9);
+        mk('a-cylinder', { radius: '0.017', height: '0.28', position: '0.02 0.01 0', color: '#eff7ff', material: 'metalness: 0.58; roughness: 0.20' }, cell9);
+        mk('a-cylinder', { radius: '0.022', height: '0.33', position: '0.14 0.01 0', color: '#d4dbe2', material: 'metalness: 0.84; roughness: 0.18' }, cell9);
+        const nyquistPlane = mk('a-plane', { id: 'nyquistPlane', width: '0.78', height: '0.78', position: '0.55 0.35 0', material: 'shader: flat; src: #nyquistCanvas; transparent: true; side: double; opacity: 1' }, s9);
+        const bodePlane = mk('a-plane', { id: 'bodePlane', width: '0.78', height: '0.39', position: '0.55 -0.15 0', material: 'shader: flat; src: #bodeCanvas; transparent: true; side: double; opacity: 1' }, s9);
+        mk('a-plane', { width: '1.0', height: '0.02', position: '0.55 0.04 0.01', color: '#1f2a35', material: 'opacity: 0.30; transparent: true' }, s9);
+        createText('Nyquist', '0.55 0.80 0.01', '0.20');
+        createText('Bode', '0.55 0.08 0.01', '0.20');
+        createText('Rs = 10.2 Ω   ·   Rct = 48.7 Ω   ·   Cdl = 12.5 µF', '0 0.63 0.02', '0.16', '#eaf4ff');
+        createText('Rango: 10 mHz a 100 kHz', '0 0.48 0.02', '0.15', '#bdf8da');
+        registerClickable(cell9);
+        steps[9] = s9;
+        labRoot.appendChild(s9);
+
+        return { nyquistPlane, bodePlane };
+      }
+
+      function onObjectClick(e) {
+        e?.preventDefault?.();
+        if (!state.started || state.busy || state.complete) return;
+        const target = e.currentTarget || e.target;
+        const id = target?.id || '';
+
+        if (state.currentStep === 1 && id === 'scale') {
+          const lentils = steps[1].querySelector('#plaLentils');
+          if (lentils) setVisible(lentils, false);
+          advanceStep();
+          return;
+        }
+
+        if (state.currentStep === 2 && id === 'flaskDissolution') {
+          state.busy = true;
+          state.vaporOn = true;
+          spinElement(target, 0.1);
+          setTimeout(() => {
+            state.busy = false;
+            advanceStep();
+          }, 650);
+          return;
+        }
+
+        if (state.currentStep === 3 && id === 'pipette') {
+          state.busy = true;
+          const drop = steps[3].querySelector('#acidDrop');
+          animateDrop(drop, () => {
+            state.busy = false;
+            advanceStep();
+          });
+          return;
+        }
+
+        if (state.currentStep === 4 && id === 'flaskStirring') {
+          state.busy = true;
+          state.vaporOn = false;
+          spinElement(target, 0.08);
+          setTimeout(() => {
+            state.busy = false;
+            advanceStep();
+          }, 650);
+          return;
+        }
+
+        if (state.currentStep === 5 && id === 'flaskPouring') {
+          const petriLiquid = steps[5].querySelector('#petriLiquid');
+          if (petriLiquid) setVisible(petriLiquid, true);
+          advanceStep();
+          return;
+        }
+
+        if (state.currentStep === 6 && id === 'desiccator') {
+          state.busy = true;
+          animateDrying();
+          setTimeout(() => { state.busy = false; }, 1600);
+          return;
+        }
+
+        if (state.currentStep === 7 && id === 'membraneDisc') {
+          advanceStep();
+          return;
+        }
+
+        if (state.currentStep === 8 && id === 'eisCell') {
+          const insertedMembrane = steps[9].querySelector('#insertedMembrane');
+          if (insertedMembrane) setVisible(insertedMembrane, true);
+          advanceStep();
+          return;
+        }
+
+        if (state.currentStep === 9 && id === 'eisCellMeasure') {
+          const nyquistPlane = document.getElementById('nyquistPlane');
+          const bodePlane = document.getElementById('bodePlane');
+          animateEISMeasurement(nyquistPlane, bodePlane);
+        }
+      }
+
+      async function startExperiment() {
+        if (state.started) return;
+        startBtn.disabled = true;
+        demoBtn.disabled = true;
+        startStatus.textContent = 'Solicitando acceso a la cámara…';
+
+        try {
+          // gesto del usuario, sin getUserMedia manual: AR.js debe controlar la cámara
+          scene.pause();
+          overlay.style.display = 'none';
+          hud.style.display = 'block';
+          state.started = true;
+          scene.play();
+          resetExperiment();
+          startStatus.textContent = 'Cámara iniciada. Escanea el marcador Hiro.';
+        } catch (err) {
+          console.warn('Error al iniciar la escena AR:', err);
+          startStatus.textContent = 'No fue posible iniciar la cámara. Revisa HTTPS, permisos y que Chrome no bloquee el acceso.';
+          overlay.style.display = 'grid';
+          hud.style.display = 'none';
+          startBtn.disabled = false;
+          demoBtn.disabled = false;
+        }
+      }
+
+      function init() {
+        buildDots();
+        buildAllSteps();
+        const { nyquistPlane, bodePlane } = buildStep9();
+        window.__nyquistPlane = nyquistPlane;
+        window.__bodePlane = bodePlane;
+        drawEISCharts(0);
+        showStep(1);
+        finalBadge.style.display = 'none';
+        restartWrap.style.display = 'none';
+
+        scene.addEventListener('loaded', () => scene.pause());
+        scene.addEventListener('camera-init', () => {
+          startStatus.textContent = 'Cámara lista.';
+        });
+        scene.addEventListener('camera-error', e => {
+          console.warn('camera-error', e);
+        });
+        scene.addEventListener('arjs-video-loaded', () => {
+          startStatus.textContent = 'Video de cámara activo.';
+        });
+
+        const marker = document.getElementById('hiroMarker');
+        marker.addEventListener('markerFound', () => {
+          if (!state.complete) instructionText.textContent = stepMessages[state.currentStep - 1];
+        });
+        marker.addEventListener('markerLost', () => {
+          if (!state.complete) instructionText.textContent = 'Marcador perdido. Reapunta la cámara al Hiro para continuar.';
+        });
+
+        startBtn.addEventListener('click', startExperiment);
+        restartBtn.addEventListener('click', () => {
+          resetExperiment();
+          restartWrap.style.display = 'none';
+        });
+        demoBtn.addEventListener('click', () => {
+          alert('1) Inicia el experimento. 2) Escanea el marcador Hiro. 3) Toca la balanza y sigue la secuencia científica hasta la medición EIS.');
+        });
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init, { once: true });
+      } else {
+        init();
+      }
+
+      window.addEventListener('resize', () => drawEISCharts(state.measureProgress));
+    })();
+  </script>
+</body>
+</html>
