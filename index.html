@@ -2,81 +2,55 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>WebAR EIS PLA</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
+<title>WebAR Minijuego PLA-EIS</title>
 <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
 <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
 <style>
-body { margin:0; font-family: system-ui; background:#000; overflow:hidden; }
-#overlay {
-  position:fixed; inset:0; background:#0a0f14;
-  display:flex; flex-direction:column; align-items:center; justify-content:center;
-  z-index:10;
-}
-button {
-  padding:15px 25px; font-size:18px; border-radius:10px;
-  background:#00c2ff; border:none; color:#000; font-weight:bold;
-}
-#status { color:#fff; margin-top:20px; font-size:14px; }
+body{margin:0;background:#0a0f14;font-family:'Segoe UI',Roboto,system-ui;overflow:hidden}
+#overlay,#ui{position:fixed;left:0;right:0;z-index:10}
+#overlay{inset:0;display:flex;justify-content:center;align-items:center;flex-direction:column;background:#0a0f14}
+button{padding:14px 24px;border:0;border-radius:14px;font-weight:700}
+#panel{margin:10px auto;width:92%;padding:14px;color:#fff;background:rgba(20,30,40,.55);backdrop-filter:blur(12px);border-radius:16px;text-align:center}
+#dots{display:flex;justify-content:center;gap:8px}.dot{width:12px;height:12px;border-radius:50%;background:#334}.active{background:#00d2ff}
+canvas{display:none}
 </style>
 </head>
 <body>
-
-<div id="overlay">
-  <button id="startBtn">Comenzar experimento</button>
-  <div id="status">Esperando inicio...</div>
-</div>
-
-<a-scene
-  embedded
-  vr-mode-ui="enabled:false"
-  renderer="logarithmicDepthBuffer: true;"
-  arjs="sourceType: webcam; facingMode: environment; debugUIEnabled: false;"
->
-
-<a-marker preset="hiro">
-  <a-box position="0 0.5 0" color="green"></a-box>
-</a-marker>
-
-<a-entity camera></a-entity>
-</a-scene>
-
+<div id='overlay'><button id='startBtn'>Comenzar experimento</button></div>
+<div id='ui' style='display:none'><div id='panel'><div id='instruction'></div><div id='dots'></div><button id='resetBtn' style='display:none;margin-top:8px'>Reiniciar</button></div></div>
+<canvas id='nyquist' width='512' height='512'></canvas><canvas id='bode' width='512' height='256'></canvas>
+<a-scene embedded vr-mode-ui='enabled:false' renderer='logarithmicDepthBuffer:true' arjs='sourceType:webcam; facingMode:environment; debugUIEnabled:false;'>
+<a-marker preset='hiro'><a-entity id='labRoot'></a-entity></a-marker><a-entity camera cursor='rayOrigin:mouse'></a-entity></a-scene>
 <script>
-(function(){
-
-const overlay = document.getElementById('overlay');
-const btn = document.getElementById('startBtn');
-const status = document.getElementById('status');
-const scene = document.querySelector('a-scene');
-
-// IMPORTANTE: no ocultar escena, solo overlay encima
-
-scene.addEventListener('loaded', ()=>{
-  scene.pause();
-  status.innerText = 'Escena lista (pausada)';
-});
-
-// Eventos reales de AR.js
-scene.addEventListener('camera-init', ()=>{
-  status.innerText = 'Cámara iniciada correctamente';
-});
-
-scene.addEventListener('camera-error', (e)=>{
-  status.innerText = 'Error cámara: ' + e.detail;
-});
-
-scene.addEventListener('arjs-video-loaded', ()=>{
-  status.innerText = 'Video de cámara activo';
-});
-
-btn.addEventListener('click', ()=>{
-  // gesto del usuario -> obligatorio para móviles
-  overlay.style.display = 'none';
-  scene.play();
-});
-
+(()=>{
+const scene=document.querySelector('a-scene'),root=document.getElementById('labRoot');
+const overlay=startBtn.parentElement,ui=document.getElementById('ui'),instruction=document.getElementById('instruction'),dots=document.getElementById('dots'),resetBtn=document.getElementById('resetBtn');
+let current=1,steps=[];
+const texts=['Toca la balanza para pesar 1 g de PLA','Toca el matraz para disolver','Toca la micropipeta para añadir H₃PO₂','Toca el matraz para agitar 16 h','Toca el matraz para verter','Toca el desecador para secar','Toca el disco para cortar','Toca la celda para montar','Toca la celda para medir'];
+for(let i=0;i<9;i++){const d=document.createElement('div');d.className='dot';dots.appendChild(d)}
+function mk(tag,attrs,parent=root){const e=document.createElement(tag);for(const k in attrs)e.setAttribute(k,attrs[k]);parent.appendChild(e);return e}
+function show(n){steps.forEach((s,i)=>s.object3D.visible=i===n-1);instruction.textContent=texts[n-1];[...dots.children].forEach((d,i)=>d.classList.toggle('active',i<n));}
+function advance(){current++;if(current<=9)show(current);else{instruction.textContent='Experimento completado';resetBtn.style.display='inline-block';}}
+function clickable(ent,fn){ent.classList.add('clickable');ent.addEventListener('click',fn)}
+function build(){
+for(let i=0;i<9;i++)steps[i]=mk('a-entity',{visible:i===0});
+clickable(mk('a-box',{position:'0 .2 0',color:'#777'},steps[0]),advance);
+clickable(mk('a-sphere',{position:'0 .4 0',radius:.25,color:'#88ddff',opacity:.5},steps[1]),advance);
+clickable(mk('a-cylinder',{position:'0 .4 0',radius:.05,height:.5,color:'#ffb347'},steps[2]),advance);
+clickable(mk('a-sphere',{position:'0 .4 0',radius:.25,color:'#88ddff'},steps[3]),advance);
+clickable(mk('a-sphere',{position:'0 .4 0',radius:.25,color:'#88ddff'},steps[4]),advance);
+clickable(mk('a-dome',{position:'0 .5 0',radius:.5,color:'#aaa',opacity:.4},steps[5]),advance);
+clickable(mk('a-cylinder',{position:'0 .2 0',radius:.3,height:.02,color:'#66ff88'},steps[6]),advance);
+clickable(mk('a-box',{position:'0 .3 0',color:'#999',opacity:.5},steps[7]),advance);
+const c=mk('a-box',{position:'0 .3 0',color:'#00d2ff'},steps[8]);clickable(c,()=>{draw();advance()});
+mk('a-plane',{position:'-.8 .8 0',width:1,height:1,material:'src:#nyquist'},steps[8]);mk('a-plane',{position:'.8 .8 0',width:1,height:.5,material:'src:#bode'},steps[8]);
+}
+function draw(){const n=document.getElementById('nyquist').getContext('2d'),b=document.getElementById('bode').getContext('2d');n.fillRect(0,0,512,512);b.fillRect(0,0,512,256);n.strokeStyle='#00d2ff';b.strokeStyle='#00d2ff';n.beginPath();for(let i=0;i<200;i++){let x=50+i*2,y=400-Math.sin(i/30)*120;i?n.lineTo(x,y):n.moveTo(x,y)}n.stroke();b.beginPath();for(let i=0;i<200;i++){let x=50+i*2,y=180-Math.cos(i/20)*60;i?b.lineTo(x,y):b.moveTo(x,y)}b.stroke();}
+build();show(1);
+startBtn.onclick=()=>{overlay.style.display='none';ui.style.display='block';scene.play()};
+resetBtn.onclick=()=>{current=1;resetBtn.style.display='none';show(1)};
+scene.addEventListener('loaded',()=>scene.pause());
 })();
 </script>
-
-</body>
-</html>
+</body></html>
