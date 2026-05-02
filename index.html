@@ -1,1740 +1,758 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sintesis y Caracterizacion de Membrana PLA Dopada para EIS | Laboratorio de Materiales Electroquimicos</title>
-    <style>
-        :root {
-            --bg-deep: #08111b;
-            --panel-bg: rgba(18, 28, 42, 0.92);
-            --glass: rgba(180, 220, 255, 0.18);
-            --glass-border: rgba(180, 220, 255, 0.12);
-            --metal-light: #d5dee8;
-            --metal-mid: #9aa8b5;
-            --metal-dark: #7d8b98;
-            --azul-brillante: #36b3ff;
-            --azul-suave: #65d4ff;
-            --azul-profundo: #0b8be6;
-            --verde-eco: #54ffb1;
-            --verde-medio: #30d98a;
-            --naranja-quimico: #ff8f32;
-            --rojo-alerta: #ff4d5a;
-            --violeta: #815bff;
-            --blanco: #eef7ff;
-            --fondo-tecnico: #0d1a28;
-            --luz-fria: #1a3045;
-            --reflejo-piso: rgba(54, 179, 255, 0.04);
-            --sombra-profunda: rgba(0, 0, 0, 0.6);
-            --texto-primario: #eef7ff;
-            --texto-secundario: #9aa8b5;
-            --texto-terciario: #7d8b98;
-            --borde-sutil: rgba(180, 220, 255, 0.08);
-            --elevacion-1: 0 2px 8px rgba(0, 0, 0, 0.4);
-            --elevacion-2: 0 4px 20px rgba(0, 0, 0, 0.5);
-            --elevacion-3: 0 8px 40px rgba(0, 0, 0, 0.6);
-            --transicion-suave: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            --transicion-lenta: 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-            --radio-esquina: 6px;
-            --radio-grande: 12px;
-        }
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        html {
-            font-size: 15px;
-            scroll-behavior: smooth;
-            height: 100%;
-            overflow: hidden;
-        }
-        body {
-            font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
-            background: var(--bg-deep);
-            color: var(--texto-primario);
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            user-select: none;
-            -webkit-user-select: none;
-            -webkit-tap-highlight-color: transparent;
-            position: relative;
-            letter-spacing: 0.01em;
-            line-height: 1.5;
-        }
-        body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            background:
-                radial-gradient(ellipse at 30% 20%, rgba(54, 179, 255, 0.06) 0%, transparent 55%),
-                radial-gradient(ellipse at 70% 60%, rgba(129, 91, 255, 0.04) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 80%, rgba(84, 255, 177, 0.03) 0%, transparent 45%);
-            pointer-events: none;
-            z-index: 0;
-        }
-        #app-container {
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
-            width: 100vw;
-            position: relative;
-            z-index: 1;
-        }
-        #header-superior {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 10px 20px;
-            background: var(--panel-bg);
-            border-bottom: 1px solid var(--borde-sutil);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            z-index: 100;
-            flex-shrink: 0;
-            min-height: 56px;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-        #header-superior .titulo-principal {
-            font-size: 1.05rem;
-            font-weight: 600;
-            letter-spacing: 0.04em;
-            color: var(--blanco);
-            white-space: nowrap;
-            text-shadow: 0 0 30px rgba(54, 179, 255, 0.3);
-            flex-shrink: 0;
-        }
-        #header-superior .titulo-principal span {
-            color: var(--azul-brillante);
-            font-weight: 700;
-        }
-        #estado-experimental {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            flex-shrink: 0;
-        }
-        #indicador-estado {
-            display: inline-flex;
-            align-items: center;
-            gap: 7px;
-            padding: 5px 14px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 500;
-            letter-spacing: 0.03em;
-            border: 1px solid var(--borde-sutil);
-            background: rgba(18, 28, 42, 0.7);
-        }
-        .led-estado {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: var(--verde-eco);
-            box-shadow: 0 0 10px var(--verde-eco), 0 0 4px var(--verde-eco);
-            animation: pulso-led 2s ease-in-out infinite;
-        }
-        .led-estado.inactivo {
-            background: #555;
-            box-shadow: none;
-            animation: none;
-        }
-        .led-estado.procesando {
-            background: var(--naranja-quimico);
-            box-shadow: 0 0 10px var(--naranja-quimico), 0 0 4px var(--naranja-quimico);
-            animation: pulso-led 0.6s ease-in-out infinite;
-        }
-        @keyframes pulso-led {
-            0%,
-            100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.5;
-            }
-        }
-        #barra-progreso-contenedor {
-            flex: 1;
-            min-width: 120px;
-            max-width: 300px;
-            height: 5px;
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 10px;
-            overflow: hidden;
-            flex-shrink: 1;
-        }
-        #barra-progreso-relleno {
-            height: 100%;
-            background: linear-gradient(90deg, var(--azul-profundo), var(--azul-brillante), var(--verde-eco));
-            border-radius: 10px;
-            transition: width var(--transicion-lenta);
-            width: 0%;
-            box-shadow: 0 0 12px rgba(54, 179, 255, 0.5);
-        }
-        #layout-principal {
-            display: flex;
-            flex: 1;
-            overflow: hidden;
-            position: relative;
-        }
-        #panel-izquierdo {
-            width: 280px;
-            flex-shrink: 0;
-            background: var(--panel-bg);
-            border-right: 1px solid var(--borde-sutil);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            display: flex;
-            flex-direction: column;
-            z-index: 50;
-            transition: transform var(--transicion-lenta);
-        }
-        #panel-izquierdo .encabezado-panel {
-            padding: 14px 16px;
-            border-bottom: 1px solid var(--borde-sutil);
-            font-weight: 600;
-            font-size: 0.85rem;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            color: var(--metal-light);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-        #bitacora-contenido {
-            flex: 1;
-            overflow-y: auto;
-            padding: 12px 14px;
-            font-size: 0.78rem;
-            color: var(--texto-secundario);
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-        }
-        #bitacora-contenido::-webkit-scrollbar {
-            width: 4px;
-        }
-        #bitacora-contenido::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        #bitacora-contenido::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.12);
-            border-radius: 4px;
-        }
-        .entrada-bitacora {
-            padding: 10px 12px;
-            background: rgba(255, 255, 255, 0.02);
-            border-left: 2px solid var(--azul-brillante);
-            border-radius: 0 var(--radio-esquina) var(--radio-esquina) 0;
-            font-size: 0.76rem;
-            line-height: 1.5;
-            animation: entrada-aparece 0.4s ease-out;
-            color: #c8d6e0;
-        }
-        .entrada-bitacora .timestamp {
-            font-size: 0.65rem;
-            color: var(--texto-terciario);
-            display: block;
-            margin-bottom: 2px;
-            letter-spacing: 0.02em;
-        }
-        @keyframes entrada-aparece {
-            from {
-                opacity: 0;
-                transform: translateX(-12px);
-            }
-            to {
-                opacity: 1;
-                transform: translateX(0);
-            }
-        }
-        #panel-central {
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-            background: radial-gradient(ellipse at center, rgba(13, 26, 40, 0.4) 0%, var(--bg-deep) 70%);
-        }
-        #laboratorio-canvas {
-            position: absolute;
-            inset: 0;
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
-        #overlay-estacion {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: var(--panel-bg);
-            border: 1px solid var(--borde-sutil);
-            border-radius: var(--radio-grande);
-            padding: 14px 24px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            z-index: 60;
-            box-shadow: var(--elevacion-3);
-            transition: all var(--transicion-suave);
-        }
-        #overlay-estacion .nombre-estacion {
-            font-weight: 600;
-            font-size: 0.9rem;
-            color: var(--blanco);
-            letter-spacing: 0.03em;
-        }
-        #overlay-estacion .boton-accion {
-            padding: 8px 20px;
-            border-radius: 20px;
-            border: 1px solid var(--azul-brillante);
-            background: rgba(54, 179, 255, 0.1);
-            color: var(--azul-brillante);
-            cursor: pointer;
-            font-weight: 500;
-            font-size: 0.8rem;
-            letter-spacing: 0.03em;
-            transition: all var(--transicion-suave);
-            white-space: nowrap;
-            font-family: inherit;
-        }
-        #overlay-estacion .boton-accion:hover {
-            background: rgba(54, 179, 255, 0.2);
-            box-shadow: 0 0 20px rgba(54, 179, 255, 0.3);
-            border-color: var(--azul-suave);
-            color: var(--azul-suave);
-        }
-        #overlay-estacion .boton-accion:active {
-            transform: scale(0.96);
-            transition: transform 0.1s;
-        }
-        #panel-derecho {
-            width: 290px;
-            flex-shrink: 0;
-            background: var(--panel-bg);
-            border-left: 1px solid var(--borde-sutil);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            display: flex;
-            flex-direction: column;
-            z-index: 50;
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
-        }
-        #panel-derecho::-webkit-scrollbar {
-            width: 4px;
-        }
-        #panel-derecho::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        #panel-derecho::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.12);
-            border-radius: 4px;
-        }
-        #panel-derecho .encabezado-panel {
-            padding: 14px 16px;
-            border-bottom: 1px solid var(--borde-sutil);
-            font-weight: 600;
-            font-size: 0.85rem;
-            letter-spacing: 0.05em;
-            text-transform: uppercase;
-            color: var(--metal-light);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            position: sticky;
-            top: 0;
-            background: var(--panel-bg);
-            z-index: 5;
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-        }
-        .parametro-grupo {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--borde-sutil);
-        }
-        .parametro-grupo .etiqueta {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.04em;
-            color: var(--texto-terciario);
-            margin-bottom: 4px;
-        }
-        .parametro-grupo .valor {
-            font-size: 1.1rem;
-            font-weight: 600;
-            color: var(--blanco);
-            letter-spacing: 0.02em;
-            font-variant-numeric: tabular-nums;
-            font-family: 'SF Mono', 'Consolas', 'Monaco', monospace;
-        }
-        .parametro-grupo .valor.destacado {
-            color: var(--azul-brillante);
-            text-shadow: 0 0 20px rgba(54, 179, 255, 0.4);
-        }
-        #footer-controles {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 14px;
-            padding: 10px 20px;
-            background: var(--panel-bg);
-            border-top: 1px solid var(--borde-sutil);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            z-index: 100;
-            flex-shrink: 0;
-            flex-wrap: wrap;
-            min-height: 50px;
-        }
-        #footer-controles button {
-            padding: 7px 16px;
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: rgba(255, 255, 255, 0.03);
-            color: var(--metal-light);
-            cursor: pointer;
-            font-size: 0.78rem;
-            font-weight: 500;
-            letter-spacing: 0.03em;
-            transition: all var(--transicion-suave);
-            font-family: inherit;
-            white-space: nowrap;
-        }
-        #footer-controles button:hover {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: rgba(255, 255, 255, 0.35);
-            color: var(--blanco);
-        }
-        #footer-controles button.activo {
-            background: rgba(54, 179, 255, 0.15);
-            border-color: var(--azul-brillante);
-            color: var(--azul-brillante);
-            box-shadow: 0 0 16px rgba(54, 179, 255, 0.2);
-        }
-        #footer-controles .btn-mute {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            padding: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.85rem;
-        }
-        #pantalla-inicial {
-            position: fixed;
-            inset: 0;
-            z-index: 1000;
-            background: var(--bg-deep);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 30px;
-            transition: opacity var(--transicion-lenta), visibility var(--transicion-lenta);
-        }
-        #pantalla-inicial.oculta {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-        }
-        #pantalla-inicial h1 {
-            font-size: 1.8rem;
-            font-weight: 700;
-            letter-spacing: 0.06em;
-            color: var(--blanco);
-            text-align: center;
-            text-shadow: 0 0 40px rgba(54, 179, 255, 0.5);
-            line-height: 1.3;
-        }
-        #pantalla-inicial h1 span {
-            display: block;
-            font-size: 0.9rem;
-            font-weight: 400;
-            color: var(--azul-brillante);
-            letter-spacing: 0.08em;
-            margin-top: 6px;
-        }
-        #pantalla-inicial .subtitulo-inicial {
-            color: var(--texto-secundario);
-            font-size: 0.9rem;
-            letter-spacing: 0.04em;
-            text-align: center;
-            max-width: 500px;
-            line-height: 1.6;
-        }
-        #btn-iniciar-experimento {
-            padding: 16px 48px;
-            border-radius: 30px;
-            border: 2px solid var(--azul-brillante);
-            background: rgba(54, 179, 255, 0.08);
-            color: var(--azul-brillante);
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            letter-spacing: 0.06em;
-            transition: all var(--transicion-lenta);
-            font-family: inherit;
-            text-transform: uppercase;
-            position: relative;
-            overflow: hidden;
-        }
-        #btn-iniciar-experimento:hover {
-            background: rgba(54, 179, 255, 0.2);
-            box-shadow: 0 0 40px rgba(54, 179, 255, 0.4), inset 0 0 40px rgba(54, 179, 255, 0.05);
-            border-color: var(--azul-suave);
-            color: var(--blanco);
-            transform: translateY(-1px);
-        }
-        #btn-iniciar-experimento::after {
-            content: '';
-            position: absolute;
-            inset: -2px;
-            border-radius: 32px;
-            background: linear-gradient(135deg, var(--azul-brillante), transparent, var(--violeta));
-            opacity: 0;
-            transition: opacity var(--transicion-lenta);
-            z-index: -1;
-        }
-        #btn-iniciar-experimento:hover::after {
-            opacity: 0.3;
-        }
-        .grafica-contenedor {
-            padding: 12px 16px;
-            border-bottom: 1px solid var(--borde-sutil);
-        }
-        .grafica-contenedor canvas {
-            width: 100%;
-            height: auto;
-            border-radius: var(--radio-esquina);
-            background: rgba(0, 0, 0, 0.3);
-        }
-        @media (max-width: 1024px) {
-            #panel-izquierdo {
-                width: 220px;
-                font-size: 0.7rem;
-            }
-            #panel-derecho {
-                width: 230px;
-                font-size: 0.7rem;
-            }
-            #header-superior .titulo-principal {
-                font-size: 0.85rem;
-            }
-            #overlay-estacion {
-                padding: 10px 16px;
-                gap: 10px;
-            }
-            #overlay-estacion .nombre-estacion {
-                font-size: 0.75rem;
-            }
-        }
-        @media (max-width: 768px) {
-            #layout-principal {
-                flex-direction: column;
-            }
-            #panel-izquierdo {
-                width: 100%;
-                max-height: 140px;
-                flex-shrink: 0;
-                border-right: none;
-                border-bottom: 1px solid var(--borde-sutil);
-            }
-            #panel-derecho {
-                width: 100%;
-                max-height: 180px;
-                flex-shrink: 0;
-                border-left: none;
-                border-top: 1px solid var(--borde-sutil);
-                flex-direction: row;
-                flex-wrap: wrap;
-                overflow-x: auto;
-            }
-            #panel-derecho .encabezado-panel {
-                width: 100%;
-            }
-            .parametro-grupo {
-                flex: 1;
-                min-width: 100px;
-            }
-            #panel-central {
-                flex: 1;
-                min-height: 280px;
-            }
-            #header-superior {
-                padding: 8px 12px;
-                gap: 8px;
-            }
-            #header-superior .titulo-principal {
-                font-size: 0.7rem;
-            }
-            #barra-progreso-contenedor {
-                max-width: 120px;
-            }
-            #footer-controles {
-                gap: 6px;
-                padding: 6px 10px;
-            }
-            #footer-controles button {
-                padding: 5px 10px;
-                font-size: 0.65rem;
-            }
-            #overlay-estacion {
-                bottom: 16px;
-                padding: 8px 14px;
-                gap: 8px;
-                flex-wrap: wrap;
-                justify-content: center;
-            }
-            #overlay-estacion .nombre-estacion {
-                font-size: 0.7rem;
-            }
-            #overlay-estacion .boton-accion {
-                padding: 6px 14px;
-                font-size: 0.7rem;
-            }
-        }
-        @media (max-width: 480px) {
-            #panel-izquierdo {
-                max-height: 100px;
-            }
-            #panel-derecho {
-                max-height: 140px;
-            }
-            #panel-central {
-                min-height: 200px;
-            }
-            #header-superior .titulo-principal {
-                font-size: 0.6rem;
-                letter-spacing: 0.01em;
-            }
-            #estado-experimental {
-                font-size: 0.65rem;
-                gap: 4px;
-            }
-            #overlay-estacion {
-                bottom: 8px;
-                padding: 6px 10px;
-                border-radius: 8px;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PLA-H₃PO₂ Interactive Scientific Experience</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+body{
+    font-family:'Inter',sans-serif;
+    background:
+        radial-gradient(circle at top left,#1e3a8a 0%,transparent 35%),
+        radial-gradient(circle at top right,#0f172a 0%,transparent 30%),
+        linear-gradient(135deg,#020617,#0f172a,#1e293b);
+    color:white;
+    overflow-x:hidden;
+    min-height:100vh;
+}
+
+.container{
+    width:100%;
+    max-width:1400px;
+    margin:auto;
+    padding:40px;
+}
+
+.hero{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+}
+
+.badge{
+    padding:12px 22px;
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:999px;
+    backdrop-filter:blur(16px);
+    background:rgba(255,255,255,.06);
+    font-size:.82rem;
+    letter-spacing:2px;
+    text-transform:uppercase;
+    margin-bottom:28px;
+}
+
+h1{
+    font-size:clamp(2.5rem,6vw,5.2rem);
+    line-height:1.05;
+    font-weight:800;
+    max-width:1100px;
+    margin-bottom:28px;
+}
+
+.subtitle{
+    font-size:1.18rem;
+    color:rgba(255,255,255,.82);
+    max-width:900px;
+    line-height:1.8;
+    margin-bottom:50px;
+}
+
+.btn{
+    padding:18px 34px;
+    border:none;
+    border-radius:18px;
+    cursor:pointer;
+    font-weight:700;
+    font-size:1rem;
+    transition:.35s;
+}
+
+.btn-primary{
+    background:linear-gradient(135deg,#38bdf8,#2563eb);
+    color:white;
+    box-shadow:0 15px 35px rgba(59,130,246,.35);
+}
+
+.btn-primary:hover{
+    transform:translateY(-4px);
+}
+
+.section{
+    display:none;
+    min-height:100vh;
+    padding:90px 0;
+}
+
+.active{
+    display:block;
+}
+
+.card{
+    background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.12);
+    border-radius:28px;
+    backdrop-filter:blur(24px);
+    padding:38px;
+    margin-bottom:35px;
+}
+
+.section-title{
+    font-size:2.3rem;
+    margin-bottom:18px;
+    font-weight:800;
+}
+
+.section-text{
+    font-size:1.05rem;
+    line-height:1.9;
+    color:rgba(255,255,255,.82);
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+    gap:28px;
+}
+
+.timeline-step{
+    padding:28px;
+    border-left:4px solid #38bdf8;
+    background:rgba(255,255,255,.03);
+    border-radius:18px;
+}
+
+.timeline-step h3{
+    margin-bottom:12px;
+    font-size:1.15rem;
+}
+
+.membrane-visual{
+    height:430px;
+    border-radius:50%;
+    background:
+        radial-gradient(circle,#38bdf8 0%,#1e3a8a 35%,transparent 70%);
+    animation:pulse 4s infinite;
+    position:relative;
+    overflow:hidden;
+}
+
+@keyframes pulse{
+    0%{transform:scale(1);}
+    50%{transform:scale(1.06);}
+    100%{transform:scale(1);}
+}
+
+.particle{
+    width:14px;
+    height:14px;
+    border-radius:50%;
+    background:#7dd3fc;
+    position:absolute;
+    box-shadow:0 0 18px #38bdf8;
+    animation:float 6s infinite ease-in-out;
+}
+
+@keyframes float{
+    0%{transform:translateY(0);}
+    50%{transform:translateY(-24px);}
+    100%{transform:translateY(0);}
+}
+
+.slider-container{
+    margin:35px 0;
+}
+
+input[type=range]{
+    width:100%;
+}
+
+.chart-box{
+    background:white;
+    border-radius:22px;
+    padding:25px;
+}
+
+.metric{
+    padding:20px;
+    border-radius:18px;
+    background:rgba(255,255,255,.05);
+    text-align:center;
+}
+
+.metric-value{
+    font-size:1.7rem;
+    font-weight:800;
+    color:#38bdf8;
+}
+
+.nav-buttons{
+    margin-top:45px;
+    display:flex;
+    gap:18px;
+    flex-wrap:wrap;
+}
+
+footer{
+    text-align:center;
+    padding:70px 0;
+    color:rgba(255,255,255,.65);
+}
+
+@media(max-width:768px){
+    .container{
+        padding:22px;
+    }
+
+    .card{
+        padding:24px;
+    }
+
+    h1{
+        font-size:2.5rem;
+    }
+}
+
+</style>
 </head>
 <body>
-    <div id="pantalla-inicial">
-        <h1>Laboratorio de Materiales Electroquimicos<span>Sintesis y Caracterizacion de Membrana PLA Dopada para EIS</span></h1>
-        <p class="subtitulo-inicial">Plataforma interactiva de visualizacion experimental con simulacion inmersiva de laboratorio de ciencia de materiales. Recorra cada estacion del proceso completo de sintesis y montaje electroquimico.</p>
-        <button id="btn-iniciar-experimento">Iniciar Experimento</button>
+
+<div class="container">
+
+<!-- HERO -->
+
+<section id="hero" class="hero active">
+
+    <div class="badge">
+        EXPERIENCIA CIENTÍFICA INTERACTIVA
     </div>
-    <div id="app-container">
-        <header id="header-superior">
-            <div class="titulo-principal">MEMBRANA <span>PLA-HPA</span> PARA EIS</div>
-            <div id="estado-experimental">
-                <span id="indicador-estado"><span class="led-estado inactivo" id="led-estado"></span><span id="texto-estado">En espera</span></span>
-                <span style="font-size:0.7rem;color:var(--texto-terciario);" id="indicador-temporal">00:00:00</span>
+
+    <h1>
+        Membranas de PLA dopadas con H₃PO₂:
+        respuesta electroquímica y transporte iónico
+    </h1>
+
+    <p class="subtitle">
+        Explore cómo una modificación química controlada altera la microestructura,
+        la polarización interna y la conductividad funcional de una membrana polimérica biodegradable.
+    </p>
+
+    <button class="btn btn-primary" onclick="showSection('intro')">
+        Iniciar exploración
+    </button>
+
+</section>
+
+
+<!-- INTRODUCCIÓN -->
+
+<section id="intro" class="section">
+
+    <div class="card">
+
+        <h2 class="section-title">
+            El sistema material
+        </h2>
+
+        <p class="section-text">
+            El ácido poliláctico (PLA) constituye una matriz polimérica biodegradable
+            con alto interés científico debido a su procesabilidad, biocompatibilidad
+            y sostenibilidad. Sin embargo, su naturaleza eléctricamente aislante
+            limita aplicaciones electroquímicas avanzadas.
+        </p>
+
+        <br>
+
+        <p class="section-text">
+            El dopaje con ácido hipofosforoso introduce perturbaciones funcionales
+            capaces de modificar:
+        </p>
+
+        <div class="grid" style="margin-top:35px;">
+
+            <div class="metric">
+                <div class="metric-value">Δμ</div>
+                <div>Movilidad de carga</div>
             </div>
-            <div id="barra-progreso-contenedor"><div id="barra-progreso-relleno"></div></div>
-            <span style="font-size:0.7rem;color:var(--texto-terciario);white-space:nowrap;" id="etapa-indicador">Etapa 0/9</span>
-        </header>
-        <div id="layout-principal">
-            <aside id="panel-izquierdo">
-                <div class="encabezado-panel">Bitacora Experimental</div>
-                <div id="bitacora-contenido"><div class="entrada-bitacora"><span class="timestamp">--:--:--</span>Sistema inicializado. Esperando inicio del experimento.</div></div>
-            </aside>
-            <main id="panel-central">
-                <canvas id="laboratorio-canvas"></canvas>
-                <div id="overlay-estacion"><span class="nombre-estacion" id="nombre-estacion-overlay">Estacion 1: Balanza Analitica</span><button class="boton-accion" id="btn-accion-estacion">Accionar</button></div>
-            </main>
-            <aside id="panel-derecho">
-                <div class="encabezado-panel">Parametros en Tiempo Real</div>
-                <div class="parametro-grupo"><div class="etiqueta">Masa PLA</div><div class="valor" id="param-masa">--</div></div>
-                <div class="parametro-grupo"><div class="etiqueta">Temperatura</div><div class="valor" id="param-temp">--</div></div>
-                <div class="parametro-grupo"><div class="etiqueta">Tiempo Agitacion</div><div class="valor" id="param-tiempo-agit">--</div></div>
-                <div class="parametro-grupo"><div class="etiqueta">Diametro Membrana</div><div class="valor" id="param-diametro">--</div></div>
-                <div class="parametro-grupo"><div class="etiqueta">Rs (Solucion)</div><div class="valor destacado" id="param-rs">--</div></div>
-                <div class="parametro-grupo"><div class="etiqueta">Rct (Transferencia)</div><div class="valor destacado" id="param-rct">--</div></div>
-                <div class="parametro-grupo"><div class="etiqueta">Cdl (Doble Capa)</div><div class="valor destacado" id="param-cdl">--</div></div>
-                <div class="grafica-contenedor"><div class="etiqueta" style="margin-bottom:6px;">Nyquist (Z' vs Z'')</div><canvas id="canvas-nyquist" width="250" height="200"></canvas></div>
-                <div class="grafica-contenedor"><div class="etiqueta" style="margin-bottom:6px;">Bode |Z|</div><canvas id="canvas-bode-mag" width="250" height="150"></canvas></div>
-                <div class="grafica-contenedor"><div class="etiqueta" style="margin-bottom:6px;">Bode Fase</div><canvas id="canvas-bode-fase" width="250" height="150"></canvas></div>
-            </aside>
+
+            <div class="metric">
+                <div class="metric-value">ε</div>
+                <div>Constante dieléctrica</div>
+            </div>
+
+            <div class="metric">
+                <div class="metric-value">P</div>
+                <div>Polarización dipolar</div>
+            </div>
+
+            <div class="metric">
+                <div class="metric-value">σ</div>
+                <div>Conductividad</div>
+            </div>
+
         </div>
-        <footer id="footer-controles">
-            <button id="btn-modo-guiado" class="activo" title="Modo recorrido guiado paso a paso">Guiado</button>
-            <button id="btn-modo-libre" title="Modo exploracion libre entre estaciones">Libre</button>
-            <button id="btn-estacion-anterior" title="Estacion anterior">&larr; Anterior</button>
-            <button id="btn-estacion-siguiente" title="Estacion siguiente">Siguiente &rarr;</button>
-            <button id="btn-reinicio" title="Reiniciar todo el experimento">Reiniciar</button>
-            <button id="btn-guardar" title="Guardar progreso localmente">Guardar</button>
-            <button class="btn-mute" id="btn-mute" title="Silenciar sonidos simulados">SND</button>
-        </footer>
+
+        <div class="nav-buttons">
+            <button class="btn btn-primary" onclick="showSection('synthesis')">
+                Continuar
+            </button>
+        </div>
+
     </div>
-    <script>
-        (function() {
-            const LabEngine = {
-                version: '2.1.0',
-                estacionActual: 0,
-                totalEstaciones: 9,
-                modoGuiado: true,
-                sonidoHabilitado: true,
-                experimentoIniciado: false,
-                progresoGlobal: 0,
-                tiempoInicio: null,
-                datosEstaciones: {},
-                observaciones: [],
-                init: function() {
-                    this.tiempoInicio = Date.now();
-                    this.cargarProgreso();
-                    SceneRenderer.init();
-                    InteractionManager.init();
-                    ExperimentController.init();
-                    ChartRenderer.init();
-                    ParticleEngine.init();
-                    UIController.init();
-                    if (this.experimentoIniciado && this.progresoGlobal > 0) {
-                        UIController.ocultarPantallaInicial();
-                        this.irAEstacion(this.estacionActual);
-                    }
-                    this.iniciarReloj();
-                },
-                iniciarReloj: function() {
-                    setInterval(() => {
-                        if (this.experimentoIniciado) {
-                            const elapsed = Math.floor((Date.now() - this.tiempoInicio) / 1000);
-                            const h = String(Math.floor(elapsed / 3600)).padStart(2, '0');
-                            const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
-                            const s = String(elapsed % 60).padStart(2, '0');
-                            document.getElementById('indicador-temporal').textContent = h + ':' + m + ':' + s;
-                        }
-                    }, 500);
-                },
-                irAEstacion: function(indice) {
-                    if (indice < 0 || indice >= this.totalEstaciones) return;
-                    if (this.modoGuiado && indice > this.progresoGlobal && !this.experimentoIniciado && indice > 0) {
-                        indice = Math.min(indice, this.progresoGlobal);
-                    }
-                    this.estacionActual = indice;
-                    if (indice > this.progresoGlobal && this.experimentoIniciado) {
-                        this.progresoGlobal = indice;
-                    }
-                    ExperimentController.cargarEstacion(indice);
-                    SceneRenderer.dibujarEstacion(indice);
-                    UIController.actualizarOverlay(indice);
-                    UIController.actualizarProgreso();
-                    this.registrarObservacion('Navegacion a Estacion ' + (indice + 1));
-                    this.guardarProgreso();
-                },
-                siguienteEstacion: function() {
-                    if (this.estacionActual < this.totalEstaciones - 1) {
-                        this.irAEstacion(this.estacionActual + 1);
-                    }
-                },
-                estacionAnterior: function() {
-                    if (this.estacionActual > 0) {
-                        this.irAEstacion(this.estacionActual - 1);
-                    }
-                },
-                registrarObservacion: function(texto) {
-                    const ahora = new Date();
-                    const ts = String(ahora.getHours()).padStart(2, '0') + ':' + String(ahora.getMinutes())
-                        .padStart(2, '0') + ':' + String(ahora.getSeconds()).padStart(2, '0');
-                    this.observaciones.push({ timestamp: ts, texto: texto });
-                    UIController.agregarBitacora(ts, texto);
-                },
-                guardarProgreso: function() {
-                    try {
-                        const datos = {
-                            estacionActual: this.estacionActual,
-                            progresoGlobal: this.progresoGlobal,
-                            experimentoIniciado: this.experimentoIniciado,
-                            tiempoInicio: this.tiempoInicio,
-                            modoGuiado: this.modoGuiado,
-                            sonidoHabilitado: this.sonidoHabilitado,
-                            datosEstaciones: this.datosEstaciones,
-                            observaciones: this.observaciones
-                        };
-                        localStorage.setItem('labEIS_progreso', JSON.stringify(datos));
-                    } catch (e) {}
-                },
-                cargarProgreso: function() {
-                    try {
-                        const raw = localStorage.getItem('labEIS_progreso');
-                        if (raw) {
-                            const datos = JSON.parse(raw);
-                            this.estacionActual = datos.estacionActual || 0;
-                            this.progresoGlobal = datos.progresoGlobal || 0;
-                            this.experimentoIniciado = datos.experimentoIniciado || false;
-                            this.tiempoInicio = datos.tiempoInicio || Date.now();
-                            this.modoGuiado = datos.modoGuiado !== undefined ? datos.modoGuiado : true;
-                            this.sonidoHabilitado = datos.sonidoHabilitado !== undefined ? datos.sonidoHabilitado : true;
-                            this.datosEstaciones = datos.datosEstaciones || {};
-                            this.observaciones = datos.observaciones || [];
-                        }
-                    } catch (e) {}
-                },
-                reiniciarTodo: function() {
-                    this.estacionActual = 0;
-                    this.progresoGlobal = 0;
-                    this.experimentoIniciado = false;
-                    this.tiempoInicio = Date.now();
-                    this.datosEstaciones = {};
-                    this.observaciones = [];
-                    document.getElementById('bitacora-contenido').innerHTML =
-                        '<div class="entrada-bitacora"><span class="timestamp">--:--:--</span>Sistema reiniciado. Todos los datos borrados.</div>';
-                    UIController.actualizarProgreso();
-                    UIController.actualizarOverlay(0);
-                    UIController.actualizarParametros({});
-                    SceneRenderer.dibujarEstacion(0);
-                    ChartRenderer.limpiarGraficas();
-                    ExperimentController.cargarEstacion(0);
-                    document.getElementById('led-estado').className = 'led-estado inactivo';
-                    document.getElementById('texto-estado').textContent = 'En espera';
-                    document.getElementById('indicador-temporal').textContent = '00:00:00';
-                    this.guardarProgreso();
+
+</section>
+
+
+<!-- SÍNTESIS -->
+
+<section id="synthesis" class="section">
+
+    <div class="card">
+
+        <h2 class="section-title">
+            Síntesis experimental
+        </h2>
+
+        <div class="grid">
+
+            <div class="timeline-step">
+                <h3>1. Disolución</h3>
+                <p>Disolución del PLA mediante agitación magnética y calentamiento controlado.</p>
+            </div>
+
+            <div class="timeline-step">
+                <h3>2. Dopaje</h3>
+                <p>Incorporación homogénea de H₃PO₂ al 15% en peso.</p>
+            </div>
+
+            <div class="timeline-step">
+                <h3>3. Casting</h3>
+                <p>Vertido en placa Petri para formación de película uniforme.</p>
+            </div>
+
+            <div class="timeline-step">
+                <h3>4. Secado</h3>
+                <p>Evaporación gradual y estabilización estructural en desecador.</p>
+            </div>
+
+        </div>
+
+        <div class="nav-buttons">
+            <button class="btn btn-primary" onclick="showSection('membrane')">
+                Visualizar membrana
+            </button>
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- VISUAL MEMBRANA -->
+
+<section id="membrane" class="section">
+
+    <div class="card">
+
+        <h2 class="section-title">
+            Representación funcional de la membrana
+        </h2>
+
+        <div class="membrane-visual" id="membraneVisual"></div>
+
+        <div class="slider-container">
+
+            <label>Dopaje (%)</label>
+
+            <input
+                type="range"
+                id="dopantSlider"
+                min="0"
+                max="25"
+                value="15"
+                oninput="updateMembrane()"
+            >
+
+        </div>
+
+        <div class="nav-buttons">
+            <button class="btn btn-primary" onclick="showSection('eis')">
+                Explorar EIS
+            </button>
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- EIS -->
+
+<section id="eis" class="section">
+
+    <div class="card">
+
+        <h2 class="section-title">
+            Explorador EIS
+        </h2>
+
+        <p class="section-text">
+            Modifique la temperatura y observe la evolución del sistema.
+        </p>
+
+        <div class="slider-container">
+
+            <label>Temperatura (K)</label>
+
+            <input
+                type="range"
+                id="tempSlider"
+                min="300"
+                max="360"
+                step="10"
+                value="300"
+                oninput="updateCharts()"
+            >
+
+        </div>
+
+        <div class="grid">
+
+            <div class="chart-box">
+                <canvas id="nyquistChart"></canvas>
+            </div>
+
+            <div class="chart-box">
+                <canvas id="arrheniusChart"></canvas>
+            </div>
+
+        </div>
+
+        <div class="nav-buttons">
+            <button class="btn btn-primary" onclick="showSection('conclusion')">
+                Interpretación
+            </button>
+        </div>
+
+    </div>
+
+</section>
+
+
+<!-- CONCLUSIONES -->
+
+<section id="conclusion" class="section">
+
+    <div class="card">
+
+        <h2 class="section-title">
+            Interpretación científica
+        </h2>
+
+        <p class="section-text">
+            El dopaje induce reorganización microestructural, facilita transporte térmicamente
+            activado y reduce barreras resistivas internas.
+        </p>
+
+        <br>
+
+        <div class="grid">
+
+            <div class="metric">
+                <div class="metric-value">0.62 eV</div>
+                <div>Energía de activación</div>
+            </div>
+
+            <div class="metric">
+                <div class="metric-value">↑σ</div>
+                <div>Mayor conductividad</div>
+            </div>
+
+            <div class="metric">
+                <div class="metric-value">↓R</div>
+                <div>Menor resistencia</div>
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<script>
+
+const sections = document.querySelectorAll('.section, .hero');
+
+function showSection(id){
+
+    sections.forEach(sec=>{
+        sec.classList.remove('active');
+    });
+
+    document.getElementById(id).classList.add('active');
+
+    window.scrollTo({
+        top:0,
+        behavior:'smooth'
+    });
+
+    if(id === 'eis'){
+        updateCharts();
+    }
+}
+
+
+
+
+
+
+/* ==========================
+   MEMBRANA INTERACTIVA
+========================== */
+
+function createParticles(){
+
+    const membrane = document.getElementById('membraneVisual');
+    membrane.innerHTML='';
+
+    for(let i=0;i<35;i++){
+
+        const p=document.createElement('div');
+        p.className='particle';
+
+        p.style.left=Math.random()*100+'%';
+        p.style.top=Math.random()*100+'%';
+        p.style.animationDelay=Math.random()*6+'s';
+
+        membrane.appendChild(p);
+    }
+}
+
+function updateMembrane(){
+
+    const value=document.getElementById('dopantSlider').value;
+    const membrane=document.getElementById('membraneVisual');
+
+    const intensity=value/25;
+
+    membrane.style.boxShadow=
+        `0 0 ${50+intensity*120}px rgba(56,189,248,${0.35+intensity})`;
+}
+
+
+
+
+
+
+
+/* ==========================
+   DATOS EXPERIMENTALES
+========================== */
+
+const nyquistData = {
+
+300:[0,1,2,3,4,5,6,7],
+310:[0,0.9,1.8,2.6,3.4,4.2,5.1],
+320:[0,0.8,1.5,2.2,3.0,3.8],
+330:[0,0.6,1.2,1.8,2.4,3.0],
+340:[0,0.5,1.0,1.5,2.0,2.5],
+350:[0,0.4,0.8,1.2,1.6,2.0],
+360:[0,0.3,0.6,0.9,1.2,1.5]
+
+};
+
+const nyquistImag = {
+
+300:[0,1.2,2.5,3.6,3.8,2.8,1.1,0],
+310:[0,1.0,2.0,2.9,3.0,2.2,0.8],
+320:[0,0.8,1.6,2.2,2.0,0.6],
+330:[0,0.6,1.2,1.6,1.3,0.3],
+340:[0,0.5,1.0,1.2,0.8,0.2],
+350:[0,0.4,0.8,0.9,0.6,0.1],
+360:[0,0.3,0.6,0.7,0.4,0.05]
+
+};
+
+const arrheniusX=[3.33,3.22,3.12,3.03,2.94,2.86,2.78];
+const arrheniusY=[-15,-13.4,-12,-10.5,-9.1,-7.9,-6.8];
+
+
+
+
+
+
+
+/* ==========================
+   NYQUIST CHART
+========================== */
+
+let nyquistChart;
+
+function buildNyquist(temp){
+
+    const ctx=document.getElementById('nyquistChart').getContext('2d');
+
+    if(nyquistChart){
+        nyquistChart.destroy();
+    }
+
+    nyquistChart=new Chart(ctx,{
+        type:'line',
+        data:{
+            labels:nyquistData[temp],
+            datasets:[{
+                data:nyquistImag[temp],
+                borderColor:'#2563eb',
+                backgroundColor:'rgba(37,99,235,.15)',
+                borderWidth:4,
+                tension:.35,
+                fill:true
+            }]
+        },
+        options:{
+            plugins:{
+                legend:{display:false},
+                title:{
+                    display:true,
+                    text:'Diagrama de Nyquist'
                 }
-            };
-            const SceneRenderer = {
-                canvas: null,
-                ctx: null,
-                ancho: 0,
-                alto: 0,
-                animacionId: null,
-                tiempo: 0,
-                particulas: [],
-                transiciones: {},
-                init: function() {
-                    this.canvas = document.getElementById('laboratorio-canvas');
-                    this.ctx = this.canvas.getContext('2d');
-                    this.redimensionar();
-                    window.addEventListener('resize', () => this.redimensionar());
-                    this.iniciarBucle();
-                },
-                redimensionar: function() {
-                    const contenedor = document.getElementById('panel-central');
-                    this.ancho = contenedor.clientWidth;
-                    this.alto = contenedor.clientHeight;
-                    this.canvas.width = this.ancho;
-                    this.canvas.height = this.alto;
-                },
-                iniciarBucle: function() {
-                    const loop = (ts) => {
-                        this.tiempo = ts * 0.001;
-                        this.dibujarEscena();
-                        this.animacionId = requestAnimationFrame(loop);
-                    };
-                    this.animacionId = requestAnimationFrame(loop);
-                },
-                dibujarEscena: function() {
-                    const ctx = this.ctx;
-                    const w = this.ancho;
-                    const h = this.alto;
-                    ctx.clearRect(0, 0, w, h);
-                    this.dibujarFondoLaboratorio(ctx, w, h);
-                    this.dibujarPisoReflectivo(ctx, w, h);
-                    this.dibujarIluminacionVolumetrica(ctx, w, h);
-                    this.dibujarEstacionActiva(ctx, w, h);
-                    ParticleEngine.actualizarYDibujar(ctx, this.tiempo);
-                },
-                dibujarFondoLaboratorio: function(ctx, w, h) {
-                    const grad = ctx.createLinearGradient(0, 0, 0, h);
-                    grad.addColorStop(0, '#0a1628');
-                    grad.addColorStop(0.5, '#0d1a2d');
-                    grad.addColorStop(1, '#08111b');
-                    ctx.fillStyle = grad;
-                    ctx.fillRect(0, 0, w, h);
-                    ctx.fillStyle = 'rgba(26,48,69,0.3)';
-                    ctx.fillRect(w * 0.02, h * 0.05, w * 0.18, h * 0.4);
-                    ctx.fillRect(w * 0.78, h * 0.08, w * 0.16, h * 0.35);
-                    ctx.fillStyle = 'rgba(20,38,55,0.4)';
-                    ctx.fillRect(w * 0.04, h * 0.06, w * 0.14, h * 0.38);
-                    ctx.fillStyle = 'rgba(30,50,70,0.25)';
-                    ctx.fillRect(w * 0.35, h * 0.02, w * 0.25, h * 0.15);
-                    ctx.fillStyle = 'rgba(54,179,255,0.03)';
-                    for (let i = 0; i < 6; i++) {
-                        ctx.fillRect(w * (0.15 + i * 0.12), h * 0.04, w * 0.06, h * 0.06);
-                    }
-                    ctx.strokeStyle = 'rgba(180,220,255,0.05)';
-                    ctx.lineWidth = 1;
-                    for (let i = 0; i < 8; i++) {
-                        ctx.beginPath();
-                        ctx.moveTo(0, h * (0.55 + i * 0.05));
-                        ctx.lineTo(w, h * (0.55 + i * 0.05));
-                        ctx.stroke();
+            },
+            scales:{
+                x:{
+                    title:{
+                        display:true,
+                        text:"Z'"
                     }
                 },
-                dibujarPisoReflectivo: function(ctx, w, h) {
-                    const gradPiso = ctx.createLinearGradient(0, h * 0.62, 0, h);
-                    gradPiso.addColorStop(0, 'rgba(8,17,27,0.7)');
-                    gradPiso.addColorStop(0.3, 'rgba(8,17,27,0.9)');
-                    gradPiso.addColorStop(1, '#08111b');
-                    ctx.fillStyle = gradPiso;
-                    ctx.fillRect(0, h * 0.62, w, h * 0.38);
-                    ctx.fillStyle = 'rgba(54,179,255,0.025)';
-                    for (let i = 0; i < 15; i++) {
-                        const rx = w * (0.05 + i * 0.065);
-                        ctx.fillRect(rx, h * 0.64, w * 0.04, h * 0.02);
-                    }
-                    const gradReflejo = ctx.createLinearGradient(0, h * 0.62, 0, h * 0.78);
-                    gradReflejo.addColorStop(0, 'rgba(180,220,255,0.04)');
-                    gradReflejo.addColorStop(1, 'transparent');
-                    ctx.fillStyle = gradReflejo;
-                    ctx.fillRect(0, h * 0.62, w, h * 0.16);
-                },
-                dibujarIluminacionVolumetrica: function(ctx, w, h) {
-                    const gradLuz = ctx.createRadialGradient(w * 0.5, h * 0.35, 0, w * 0.5, h * 0.35, w * 0.7);
-                    gradLuz.addColorStop(0, 'rgba(54,179,255,0.07)');
-                    gradLuz.addColorStop(0.5, 'rgba(54,179,255,0.02)');
-                    gradLuz.addColorStop(1, 'transparent');
-                    ctx.fillStyle = gradLuz;
-                    ctx.fillRect(0, 0, w, h);
-                    const gradLuz2 = ctx.createRadialGradient(w * 0.3, h * 0.5, 0, w * 0.3, h * 0.5, w * 0.4);
-                    gradLuz2.addColorStop(0, 'rgba(129,91,255,0.04)');
-                    gradLuz2.addColorStop(1, 'transparent');
-                    ctx.fillStyle = gradLuz2;
-                    ctx.fillRect(0, 0, w, h);
-                },
-                dibujarEstacionActiva: function(ctx, w, h) {
-                    const estacion = LabEngine.estacionActual;
-                    const cx = w * 0.5;
-                    const cy = h * 0.38;
-                    switch (estacion) {
-                        case 0:
-                            this.dibujarBalanzaAnalitica(ctx, cx, cy);
-                            break;
-                        case 1:
-                            this.dibujarSistemaReflujo(ctx, cx, cy);
-                            break;
-                        case 2:
-                            this.dibujarAdicionAcido(ctx, cx, cy);
-                            break;
-                        case 3:
-                            this.dibujarAgitacionProlongada(ctx, cx, cy);
-                            break;
-                        case 4:
-                            this.dibujarVertidoPetri(ctx, cx, cy);
-                            break;
-                        case 5:
-                            this.dibujarDesecador(ctx, cx, cy);
-                            break;
-                        case 6:
-                            this.dibujarCorteMembrana(ctx, cx, cy);
-                            break;
-                        case 7:
-                            this.dibujarMontajeCelda(ctx, cx, cy);
-                            break;
-                        case 8:
-                            this.dibujarVisualizacionEIS(ctx, cx, cy);
-                            break;
-                        default:
-                            this.dibujarBalanzaAnalitica(ctx, cx, cy);
-                    }
-                },
-                dibujarBalanzaAnalitica: function(ctx, cx, cy) {
-                    const t = this.tiempo;
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    ctx.fillStyle = '#1a2a3a';
-                    ctx.strokeStyle = 'rgba(180,220,255,0.25)';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.roundRect(-90, -70, 180, 140, 12);
-                    ctx.fill();
-                    ctx.stroke();
-                    ctx.fillStyle = '#0d1a28';
-                    ctx.fillRect(-70, -90, 140, 30);
-                    ctx.strokeStyle = 'rgba(180,220,255,0.3)';
-                    ctx.lineWidth = 1;
-                    ctx.strokeRect(-70, -90, 140, 30);
-                    ctx.fillStyle = '#36b3ff';
-                    ctx.font = '16px "SF Mono","Consolas","Monaco",monospace';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('1.0000 g', 0, -68);
-                    ctx.fillStyle = 'rgba(54,179,255,0.5)';
-                    ctx.fillRect(-35, -82, 70, 3);
-                    ctx.fillStyle = '#2a3a4a';
-                    ctx.fillRect(-40, -25, 80, 50);
-                    ctx.fillStyle = '#9aa8b5';
-                    ctx.beginPath();
-                    ctx.arc(0, 20, 38, Math.PI, 0);
-                    ctx.fill();
-                    ctx.fillStyle = '#d5dee8';
-                    ctx.beginPath();
-                    ctx.arc(0, 20, 30, Math.PI, 0);
-                    ctx.fill();
-                    ctx.fillStyle = 'rgba(255,255,255,0.9)';
-                    ctx.beginPath();
-                    ctx.arc(0, 18, 22, Math.PI, 0);
-                    ctx.fill();
-                    ctx.fillStyle = '#eef7ff';
-                    ctx.fillRect(-8, -35, 16, 8);
-                    const brillo = Math.sin(t * 2) * 0.15 + 0.4;
-                    ctx.fillStyle = 'rgba(54,179,255,' + brillo + ')';
-                    ctx.beginPath();
-                    ctx.arc(0, -40, 18, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#eef7ff';
-                    ctx.beginPath();
-                    ctx.arc(0, -40, 10, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.restore();
-                },
-                dibujarSistemaReflujo: function(ctx, cx, cy) {
-                    const t = this.tiempo;
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    ctx.fillStyle = '#1a2a3a';
-                    ctx.fillRect(-70, -100, 140, 200);
-                    ctx.fillStyle = '#2a3a4a';
-                    ctx.fillRect(-65, 80, 130, 25);
-                    ctx.fillStyle = '#ff8f32';
-                    ctx.fillRect(-55, 82, 110, 8);
-                    const calorflicker = Math.sin(t * 8) * 0.2 + 0.7;
-                    ctx.fillStyle = 'rgba(255,143,50,' + calorflicker + ')';
-                    ctx.fillRect(-50, 84, 100, 4);
-                    ctx.fillStyle = '#d5dee8';
-                    ctx.beginPath();
-                    ctx.arc(0, 10, 35, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = 'rgba(180,220,255,0.3)';
-                    ctx.beginPath();
-                    ctx.arc(0, 10, 32, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = 'rgba(84,255,177,0.3)';
-                    ctx.beginPath();
-                    ctx.arc(0, 10, 25, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#9aa8b5';
-                    ctx.fillRect(-3, -55, 6, 65);
-                    ctx.fillStyle = '#d5dee8';
-                    ctx.fillRect(-6, -60, 12, 8);
-                    ctx.fillRect(-5, -65, 10, 6);
-                    ctx.fillStyle = 'rgba(180,220,255,0.2)';
-                    ctx.fillRect(-4, -75, 8, 20);
-                    const vaporY = -70 + Math.sin(t * 3) * 8;
-                    ctx.fillStyle = 'rgba(200,220,240,0.25)';
-                    for (let i = 0; i < 5; i++) {
-                        ctx.beginPath();
-                        ctx.arc(-2 + i * 2, vaporY - i * 6, 4 + i * 1.5, 0, Math.PI * 2);
-                        ctx.fill();
-                    }
-                    ctx.strokeStyle = 'rgba(54,179,255,0.3)';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.moveTo(-6, -55);
-                    ctx.lineTo(-25, -75);
-                    ctx.moveTo(6, -55);
-                    ctx.lineTo(25, -75);
-                    ctx.stroke();
-                    ctx.restore();
-                },
-                dibujarAdicionAcido: function(ctx, cx, cy) {
-                    const t = this.tiempo;
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    ctx.fillStyle = '#1a2a3a';
-                    ctx.fillRect(-55, -50, 110, 110);
-                    ctx.fillStyle = '#d5dee8';
-                    ctx.beginPath();
-                    ctx.arc(0, 15, 30, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = 'rgba(255,143,50,0.5)';
-                    ctx.beginPath();
-                    ctx.arc(0, 15, 26, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#eef7ff';
-                    ctx.fillRect(-2, -55, 4, 70);
-                    ctx.fillStyle = '#9aa8b5';
-                    ctx.fillRect(-4, -50, 8, 4);
-                    ctx.fillRect(-5, -42, 10, 6);
-                    const gotaY = -15 + Math.sin(t * 1.5) * 5;
-                    ctx.fillStyle = 'rgba(255,143,50,0.8)';
-                    ctx.beginPath();
-                    ctx.arc(0, gotaY, 6, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = 'rgba(255,200,150,0.6)';
-                    ctx.beginPath();
-                    ctx.arc(1, gotaY - 1, 3, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = 'rgba(129,91,255,0.3)';
-                    ctx.beginPath();
-                    ctx.arc(0, 15, 18, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.restore();
-                },
-                dibujarAgitacionProlongada: function(ctx, cx, cy) {
-                    const t = this.tiempo;
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    ctx.fillStyle = '#1a2a3a';
-                    ctx.fillRect(-60, -60, 120, 130);
-                    ctx.fillStyle = '#d5dee8';
-                    ctx.beginPath();
-                    ctx.arc(0, 5, 32, 0, Math.PI * 2);
-                    ctx.fill();
-                    const vortice = Math.sin(t * 4) * 8;
-                    ctx.fillStyle = 'rgba(54,179,255,0.4)';
-                    ctx.beginPath();
-                    ctx.arc(vortice * 0.3, 5, 22, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = 'rgba(255,255,255,0.5)';
-                    ctx.beginPath();
-                    ctx.arc(vortice * 0.5, 5 - Math.abs(vortice) * 0.5, 8, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#eef7ff';
-                    ctx.font = '11px "SF Mono","Consolas",monospace';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('AGITANDO 16h', 0, -45);
-                    const progreso = (t % 8) / 8;
-                    ctx.fillStyle = 'rgba(84,255,177,0.6)';
-                    ctx.fillRect(-30, -38, 60 * progreso, 3);
-                    ctx.restore();
-                },
-                dibujarVertidoPetri: function(ctx, cx, cy) {
-                    const t = this.tiempo;
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    ctx.fillStyle = '#1a2a3a';
-                    ctx.fillRect(-55, -40, 110, 95);
-                    const inclinacion = Math.min((t % 6) / 3, 1) * 0.5;
-                    ctx.save();
-                    ctx.rotate(-inclinacion);
-                    ctx.fillStyle = '#d5dee8';
-                    ctx.beginPath();
-                    ctx.arc(10, -5, 22, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = 'rgba(255,143,50,0.4)';
-                    ctx.beginPath();
-                    ctx.arc(10, -5, 18, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.restore();
-                    ctx.fillStyle = '#eef7ff';
-                    ctx.beginPath();
-                    ctx.ellipse(0, 28, 40, 10, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = 'rgba(255,180,120,0.5)';
-                    ctx.beginPath();
-                    ctx.ellipse(0, 28, 32, 7, 0, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-                    ctx.lineWidth = 1;
-                    ctx.stroke();
-                    ctx.restore();
-                },
-                dibujarDesecador: function(ctx, cx, cy) {
-                    const t = this.tiempo;
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    ctx.fillStyle = '#1a2a3a';
-                    ctx.fillRect(-55, -65, 110, 140);
-                    ctx.fillStyle = 'rgba(180,220,255,0.2)';
-                    ctx.beginPath();
-                    ctx.arc(0, -25, 45, Math.PI, 0);
-                    ctx.fill();
-                    ctx.fillStyle = '#1a2a3a';
-                    ctx.fillRect(-45, -25, 90, 55);
-                    ctx.fillStyle = 'rgba(180,220,255,0.15)';
-                    ctx.fillRect(-45, -27, 90, 4);
-                    const colorCambio = Math.min((t % 10) / 5, 1);
-                    const r = Math.floor(255 - colorCambio * 126);
-                    const g = Math.floor(143 - colorCambio * 52);
-                    const b = Math.floor(50 + colorCambio * 205);
-                    ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',0.7)';
-                    ctx.fillRect(-30, 5, 60, 20);
-                    ctx.fillStyle = '#9aa8b5';
-                    ctx.fillRect(-42, 30, 84, 5);
-                    ctx.restore();
-                },
-                dibujarCorteMembrana: function(ctx, cx, cy) {
-                    const t = this.tiempo;
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    ctx.fillStyle = '#1a2a3a';
-                    ctx.fillRect(-55, -55, 110, 120);
-                    ctx.fillStyle = 'rgba(200,210,220,0.5)';
-                    ctx.beginPath();
-                    ctx.arc(0, 10, 30, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = 'rgba(255,255,255,0.4)';
-                    ctx.beginPath();
-                    ctx.arc(0, 10, 20, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.strokeStyle = 'rgba(54,179,255,0.8)';
-                    ctx.lineWidth = 2;
-                    ctx.setLineDash([4, 4]);
-                    ctx.beginPath();
-                    ctx.arc(0, 10, 22, 0, Math.PI * 2);
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                    ctx.fillStyle = '#eef7ff';
-                    ctx.font = '10px "SF Mono","Consolas",monospace';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('12.00 mm', 0, -35);
-                    ctx.fillStyle = '#9aa8b5';
-                    ctx.fillRect(-28, 35, 56, 8);
-                    ctx.fillStyle = '#d5dee8';
-                    ctx.fillRect(-30, 38, 60, 3);
-                    ctx.restore();
-                },
-                dibujarMontajeCelda: function(ctx, cx, cy) {
-                    const t = this.tiempo;
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    ctx.fillStyle = '#1a2a3a';
-                    ctx.fillRect(-60, -70, 120, 150);
-                    ctx.fillStyle = '#2a3a4a';
-                    ctx.fillRect(-35, -55, 70, 110);
-                    ctx.fillStyle = 'rgba(180,220,255,0.2)';
-                    ctx.fillRect(-30, -50, 60, 100);
-                    ctx.fillStyle = '#d5dee8';
-                    ctx.fillRect(-3, -50, 6, 60);
-                    ctx.fillStyle = '#9aa8b5';
-                    ctx.fillRect(-8, -55, 16, 8);
-                    ctx.fillStyle = '#ff8f32';
-                    ctx.fillRect(-8, 15, 16, 4);
-                    ctx.fillStyle = '#eef7ff';
-                    ctx.fillRect(-12, -60, 24, 4);
-                    ctx.fillStyle = '#54ffb1';
-                    ctx.fillRect(-12, 22, 24, 3);
-                    ctx.fillStyle = 'rgba(255,255,255,0.6)';
-                    ctx.font = '8px "SF Mono","Consolas",monospace';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('CE', 18, -52);
-                    ctx.fillText('WE', -20, 10);
-                    ctx.fillText('RE', 20, 12);
-                    ctx.restore();
-                },
-                dibujarVisualizacionEIS: function(ctx, cx, cy) {
-                    const t = this.tiempo;
-                    ctx.save();
-                    ctx.translate(cx, cy);
-                    ctx.fillStyle = '#1a2a3a';
-                    ctx.fillRect(-100, -80, 200, 170);
-                    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                    ctx.fillRect(-90, -70, 180, 150);
-                    ctx.strokeStyle = 'rgba(54,179,255,0.3)';
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    ctx.moveTo(-80, 60);
-                    ctx.lineTo(80, 60);
-                    ctx.moveTo(-80, -60);
-                    ctx.lineTo(-80, 60);
-                    ctx.stroke();
-                    ctx.strokeStyle = 'rgba(84,255,177,0.7)';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    const puntosNyquist = 200;
-                    const Rs = 10.2;
-                    const Rct = 48.7;
-                    const Cdl = 12.5e-6;
-                    const progresoTrazo = Math.min((t % 8) / 5, 1);
-                    const puntosAMostrar = Math.floor(puntosNyquist * progresoTrazo);
-                    for (let i = 0; i < puntosAMostrar; i++) {
-                        const freq = 0.01 * Math.pow(10, (i / puntosNyquist) * 7);
-                        const omega = 2 * Math.PI * freq;
-                        const Zre = Rs + Rct / (1 + Math.pow(omega * Rct * Cdl, 2));
-                        const Zim = -(Rct * Rct * omega * Cdl) / (1 + Math.pow(omega * Rct * Cdl, 2));
-                        const px = -80 + (Zre / 80) * 140;
-                        const py = 60 - (Math.abs(Zim) / 40) * 120;
-                        if (i === 0) ctx.moveTo(px, py);
-                        else ctx.lineTo(px, py);
-                    }
-                    ctx.stroke();
-                    ctx.fillStyle = '#eef7ff';
-                    ctx.font = '9px "SF Mono","Consolas",monospace';
-                    ctx.textAlign = 'center';
-                    ctx.fillText('Nyquist: Rs=' + Rs.toFixed(1) + ' Rct=' + Rct.toFixed(1) + ' Cdl=' + (Cdl * 1e6)
-                        .toFixed(1) + 'uF', 0, 75);
-                    ctx.restore();
-                }
-            };
-            const InteractionManager = {
-                init: function() {
-                    const btnAccion = document.getElementById('btn-accion-estacion');
-                    btnAccion.addEventListener('click', () => this.ejecutarAccionEstacion());
-                    document.getElementById('btn-iniciar-experimento').addEventListener('click', () => {
-                        LabEngine.experimentoIniciado = true;
-                        LabEngine.tiempoInicio = Date.now();
-                        LabEngine.progresoGlobal = 0;
-                        LabEngine.estacionActual = 0;
-                        UIController.ocultarPantallaInicial();
-                        LabEngine.irAEstacion(0);
-                        LabEngine.registrarObservacion('Experimento iniciado. Membrana PLA-HPA para EIS.');
-                        document.getElementById('led-estado').className = 'led-estado procesando';
-                        document.getElementById('texto-estado').textContent = 'En proceso';
-                        LabEngine.guardarProgreso();
-                    });
-                    document.getElementById('btn-estacion-siguiente').addEventListener('click', () => LabEngine
-                        .siguienteEstacion());
-                    document.getElementById('btn-estacion-anterior').addEventListener('click', () => LabEngine
-                        .estacionAnterior());
-                    document.getElementById('btn-modo-guiado').addEventListener('click', function() {
-                        LabEngine.modoGuiado = true;
-                        this.classList.add('activo');
-                        document.getElementById('btn-modo-libre').classList.remove('activo');
-                        LabEngine.guardarProgreso();
-                    });
-                    document.getElementById('btn-modo-libre').addEventListener('click', function() {
-                        LabEngine.modoGuiado = false;
-                        this.classList.add('activo');
-                        document.getElementById('btn-modo-guiado').classList.remove('activo');
-                        LabEngine.guardarProgreso();
-                    });
-                    document.getElementById('btn-reinicio').addEventListener('click', () => {
-                        if (confirm(
-                                'Reiniciar todo el experimento? Se perdera el progreso no guardado.')) {
-                            LabEngine.reiniciarTodo();
-                        }
-                    });
-                    document.getElementById('btn-guardar').addEventListener('click', () => {
-                        LabEngine.guardarProgreso();
-                        LabEngine.registrarObservacion('Progreso guardado localmente.');
-                    });
-                    document.getElementById('btn-mute').addEventListener('click', function() {
-                        LabEngine.sonidoHabilitado = !LabEngine.sonidoHabilitado;
-                        this.textContent = LabEngine.sonidoHabilitado ? 'SND' : 'OFF';
-                        this.style.opacity = LabEngine.sonidoHabilitado ? '1' : '0.5';
-                        LabEngine.guardarProgreso();
-                    });
-                    if (!LabEngine.sonidoHabilitado) {
-                        document.getElementById('btn-mute').textContent = 'OFF';
-                        document.getElementById('btn-mute').style.opacity = '0.5';
-                    }
-                    if (LabEngine.modoGuiado) {
-                        document.getElementById('btn-modo-guiado').classList.add('activo');
-                        document.getElementById('btn-modo-libre').classList.remove('activo');
-                    } else {
-                        document.getElementById('btn-modo-libre').classList.add('activo');
-                        document.getElementById('btn-modo-guiado').classList.remove('activo');
-                    }
-                    document.addEventListener('keydown', (e) => {
-                        if (e.key === 'ArrowRight') LabEngine.siguienteEstacion();
-                        if (e.key === 'ArrowLeft') LabEngine.estacionAnterior();
-                        if (e.key === ' ' || e.key === 'Enter') {
-                            e.preventDefault();
-                            this.ejecutarAccionEstacion();
-                        }
-                    });
-                },
-                ejecutarAccionEstacion: function() {
-                    if (!LabEngine.experimentoIniciado && LabEngine.estacionActual === 0) {
-                        LabEngine.experimentoIniciado = true;
-                        LabEngine.tiempoInicio = Date.now();
-                        LabEngine.progresoGlobal = 0;
-                        UIController.ocultarPantallaInicial();
-                        document.getElementById('led-estado').className = 'led-estado procesando';
-                        document.getElementById('texto-estado').textContent = 'En proceso';
-                    }
-                    ExperimentController.ejecutarAccion(LabEngine.estacionActual);
-                    LabEngine.guardarProgreso();
-                }
-            };
-            const ExperimentController = {
-                datosEstacion: {},
-                init: function() {
-                    this.datosEstacion = {};
-                },
-                cargarEstacion: function(indice) {
-                    this.datosEstacion = LabEngine.datosEstaciones[indice] || {};
-                    this.actualizarParametrosVisuales(indice);
-                },
-                ejecutarAccion: function(indice) {
-                    switch (indice) {
-                        case 0:
-                            this.accionBalanza();
-                            break;
-                        case 1:
-                            this.accionReflujo();
-                            break;
-                        case 2:
-                            this.accionAdicion();
-                            break;
-                        case 3:
-                            this.accionAgitacion();
-                            break;
-                        case 4:
-                            this.accionVertido();
-                            break;
-                        case 5:
-                            this.accionSecado();
-                            break;
-                        case 6:
-                            this.accionCorte();
-                            break;
-                        case 7:
-                            this.accionMontaje();
-                            break;
-                        case 8:
-                            this.accionEIS();
-                            break;
-                    }
-                    LabEngine.datosEstaciones[indice] = this.datosEstacion;
-                    this.actualizarParametrosVisuales(indice);
-                    LabEngine.guardarProgreso();
-                },
-                accionBalanza: function() {
-                    this.datosEstacion.masa = '1.0000 g';
-                    LabEngine.registrarObservacion('Balanza analitica: masa PLA registrada = 1.0000 g');
-                    document.getElementById('param-masa').textContent = '1.0000 g';
-                    UIController.pulsoParametro('param-masa');
-                },
-                accionReflujo: function() {
-                    this.datosEstacion.temperatura = '65.0 C';
-                    LabEngine.registrarObservacion('Sistema de disolucion con reflujo activado. T = 65.0 C. Disolvente: cloroformo.');
-                    document.getElementById('param-temp').textContent = '65.0 C';
-                    UIController.pulsoParametro('param-temp');
-                    ParticleEngine.emitirVapor(15);
-                },
-                accionAdicion: function() {
-                    this.datosEstacion.acido = 'HPA 0.5% v/v';
-                    LabEngine.registrarObservacion('Adicion de acido hipofosforoso (HPA) al 0.5% v/v. Cambio de color observado.');
-                    ParticleEngine.emitirGota(1);
-                },
-                accionAgitacion: function() {
-                    this.datosEstacion.tiempoAgitacion = '16 h';
-                    LabEngine.registrarObservacion('Agitacion prolongada iniciada. Duracion estimada: 16 horas a 400 RPM.');
-                    document.getElementById('param-tiempo-agit').textContent = '16 h';
-                    UIController.pulsoParametro('param-tiempo-agit');
-                },
-                accionVertido: function() {
-                    this.datosEstacion.vertido = 'Completado';
-                    LabEngine.registrarObservacion('Vertido en placa Petri completado. Formacion de pelicula uniforme.');
-                },
-                accionSecado: function() {
-                    this.datosEstacion.secado = 'Completado - Indicador violeta';
-                    LabEngine.registrarObservacion(
-                        'Secado en desecador completado. Silica gel cambio de naranja a violeta. Membrana seca obtenida.');
-                },
-                accionCorte: function() {
-                    this.datosEstacion.diametro = '12.00 mm';
-                    LabEngine.registrarObservacion('Corte circular de membrana: diametro = 12.00 mm. Borde limpio.');
-                    document.getElementById('param-diametro').textContent = '12.00 mm';
-                    UIController.pulsoParametro('param-diametro');
-                },
-                accionMontaje: function() {
-                    this.datosEstacion.montaje = 'Celda EIS configurada';
-                    LabEngine.registrarObservacion(
-                        'Montaje en celda EIS completado. WE: membrana PLA-HPA, RE: Ag/AgCl, CE: Pt. Electrolito: KCl 0.1M + K3Fe(CN)6/K4Fe(CN)6 5mM.');
-                },
-                accionEIS: function() {
-                    this.datosEstacion.Rs = '10.2 Ohm';
-                    this.datosEstacion.Rct = '48.7 Ohm';
-                    this.datosEstacion.Cdl = '12.5 uF';
-                    LabEngine.registrarObservacion(
-                        'EIS completado. Rs=10.2 Ohm, Rct=48.7 Ohm, Cdl=12.5 uF. Modelo Randles ajustado.');
-                    document.getElementById('param-rs').textContent = '10.2 Ohm';
-                    document.getElementById('param-rct').textContent = '48.7 Ohm';
-                    document.getElementById('param-cdl').textContent = '12.5 uF';
-                    UIController.pulsoParametro('param-rs');
-                    UIController.pulsoParametro('param-rct');
-                    UIController.pulsoParametro('param-cdl');
-                    ChartRenderer.dibujarNyquist();
-                    ChartRenderer.dibujarBode();
-                    document.getElementById('led-estado').className = 'led-estado';
-                    document.getElementById('texto-estado').textContent = 'Completado';
-                    LabEngine.progresoGlobal = 9;
-                    UIController.actualizarProgreso();
-                },
-                actualizarParametrosVisuales: function(indice) {
-                    const datos = this.datosEstacion;
-                    document.getElementById('param-masa').textContent = datos.masa || '--';
-                    document.getElementById('param-temp').textContent = datos.temperatura || '--';
-                    document.getElementById('param-tiempo-agit').textContent = datos.tiempoAgitacion || '--';
-                    document.getElementById('param-diametro').textContent = datos.diametro || '--';
-                    document.getElementById('param-rs').textContent = datos.Rs || '--';
-                    document.getElementById('param-rct').textContent = datos.Rct || '--';
-                    document.getElementById('param-cdl').textContent = datos.Cdl || '--';
-                    if (indice >= 8 && datos.Rs) {
-                        ChartRenderer.dibujarNyquist();
-                        ChartRenderer.dibujarBode();
+                y:{
+                    title:{
+                        display:true,
+                        text:"Z''"
                     }
                 }
-            };
-            const ChartRenderer = {
-                init: function() {},
-                limpiarGraficas: function() {
-                    const canvases = ['canvas-nyquist', 'canvas-bode-mag', 'canvas-bode-fase'];
-                    canvases.forEach(id => {
-                        const c = document.getElementById(id);
-                        if (c) {
-                            const ctx = c.getContext('2d');
-                            ctx.clearRect(0, 0, c.width, c.height);
-                            ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                            ctx.fillRect(0, 0, c.width, c.height);
-                        }
-                    });
-                },
-                dibujarNyquist: function() {
-                    const canvas = document.getElementById('canvas-nyquist');
-                    if (!canvas) return;
-                    const ctx = canvas.getContext('2d');
-                    const w = canvas.width;
-                    const h = canvas.height;
-                    ctx.clearRect(0, 0, w, h);
-                    ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                    ctx.fillRect(0, 0, w, h);
-                    const margen = 25;
-                    const plotW = w - margen * 2;
-                    const plotH = h - margen * 2;
-                    ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-                    ctx.lineWidth = 0.5;
-                    ctx.beginPath();
-                    ctx.moveTo(margen, margen);
-                    ctx.lineTo(margen, h - margen);
-                    ctx.lineTo(w - margen, h - margen);
-                    ctx.stroke();
-                    const Rs = 10.2;
-                    const Rct = 48.7;
-                    const Cdl = 12.5e-6;
-                    const Zmax = Rs + Rct + 5;
-                    ctx.strokeStyle = 'rgba(84,255,177,0.8)';
-                    ctx.lineWidth = 1.5;
-                    ctx.beginPath();
-                    for (let i = 0; i < 200; i++) {
-                        const freq = 0.01 * Math.pow(10, (i / 199) * 7);
-                        const omega = 2 * Math.PI * freq;
-                        const Zre = Rs + Rct / (1 + Math.pow(omega * Rct * Cdl, 2));
-                        const Zim = -(Rct * Rct * omega * Cdl) / (1 + Math.pow(omega * Rct * Cdl, 2));
-                        const px = margen + (Zre / Zmax) * plotW;
-                        const py = h - margen - (Math.abs(Zim) / (Zmax * 0.7)) * plotH;
-                        if (i === 0) ctx.moveTo(px, py);
-                        else ctx.lineTo(px, py);
-                    }
-                    ctx.stroke();
-                    ctx.fillStyle = '#eef7ff';
-                    ctx.font = '8px monospace';
-                    ctx.fillText('Nyquist', margen + 4, margen + 10);
-                },
-                dibujarBode: function() {
-                    const canvasMag = document.getElementById('canvas-bode-mag');
-                    const canvasFase = document.getElementById('canvas-bode-fase');
-                    if (!canvasMag || !canvasFase) return;
-                    [canvasMag, canvasFase].forEach(canvas => {
-                        const ctx = canvas.getContext('2d');
-                        ctx.clearRect(0, 0, canvas.width, canvas.height);
-                        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-                        ctx.fillRect(0, 0, canvas.width, canvas.height);
-                    });
-                    const ctxMag = canvasMag.getContext('2d');
-                    const ctxFase = canvasFase.getContext('2d');
-                    const w = canvasMag.width;
-                    const h = canvasMag.height;
-                    const margen = 25;
-                    const plotW = w - margen * 2;
-                    const plotH = h - margen * 2;
-                    [ctxMag, ctxFase].forEach(ctx => {
-                        ctx.strokeStyle = 'rgba(255,255,255,0.2)';
-                        ctx.lineWidth = 0.5;
-                        ctx.beginPath();
-                        ctx.moveTo(margen, margen);
-                        ctx.lineTo(margen, h - margen);
-                        ctx.lineTo(w - margen, h - margen);
-                        ctx.stroke();
-                    });
-                    const Rs = 10.2;
-                    const Rct = 48.7;
-                    const Cdl = 12.5e-6;
-                    const Zmax = Rs + Rct;
-                    ctxMag.strokeStyle = 'rgba(54,179,255,0.8)';
-                    ctxMag.lineWidth = 1.5;
-                    ctxMag.beginPath();
-                    ctxFase.strokeStyle = 'rgba(255,143,50,0.8)';
-                    ctxFase.lineWidth = 1.5;
-                    ctxFase.beginPath();
-                    for (let i = 0; i < 200; i++) {
-                        const freq = 0.01 * Math.pow(10, (i / 199) * 7);
-                        const omega = 2 * Math.PI * freq;
-                        const Zre = Rs + Rct / (1 + Math.pow(omega * Rct * Cdl, 2));
-                        const Zim = -(Rct * Rct * omega * Cdl) / (1 + Math.pow(omega * Rct * Cdl, 2));
-                        const mag = Math.sqrt(Zre * Zre + Zim * Zim);
-                        const fase = Math.atan2(Zim, Zre) * 180 / Math.PI;
-                        const nx = margen + (i / 199) * plotW;
-                        const magY = h - margen - (mag / Zmax) * plotH;
-                        const faseY = h - margen - ((fase + 90) / 90) * plotH;
-                        if (i === 0) {
-                            ctxMag.moveTo(nx, magY);
-                            ctxFase.moveTo(nx, faseY);
-                        } else {
-                            ctxMag.lineTo(nx, magY);
-                            ctxFase.lineTo(nx, faseY);
-                        }
-                    }
-                    ctxMag.stroke();
-                    ctxFase.stroke();
-                    ctxMag.fillStyle = '#eef7ff';
-                    ctxMag.font = '8px monospace';
-                    ctxMag.fillText('|Z|', margen + 4, margen + 10);
-                    ctxFase.fillStyle = '#eef7ff';
-                    ctxFase.font = '8px monospace';
-                    ctxFase.fillText('Fase', margen + 4, margen + 10);
-                }
-            };
-            const ParticleEngine = {
-                particulas: [],
-                init: function() {},
-                emitirVapor: function(cantidad) {
-                    for (let i = 0; i < cantidad; i++) {
-                        this.particulas.push({
-                            tipo: 'vapor',
-                            x: Math.random() * 40 - 20,
-                            y: -40 - Math.random() * 30,
-                            vx: (Math.random() - 0.5) * 0.3,
-                            vy: -Math.random() * 0.8 - 0.2,
-                            vida: 1,
-                            decaimiento: 0.003 + Math.random() * 0.006,
-                            tamano: 3 + Math.random() * 6
-                        });
-                    }
-                },
-                emitirGota: function(cantidad) {
-                    for (let i = 0; i < cantidad; i++) {
-                        this.particulas.push({
-                            tipo: 'gota',
-                            x: 0,
-                            y: -35,
-                            vx: 0,
-                            vy: 1.5,
-                            vida: 1,
-                            decaimiento: 0.02,
-                            tamano: 5
-                        });
-                    }
-                },
-                actualizarYDibujar: function(ctx, tiempo) {
-                    this.particulas = this.particulas.filter(p => p.vida > 0);
-                    for (const p of this.particulas) {
-                        p.x += p.vx;
-                        p.y += p.vy;
-                        p.vida -= p.decaimiento;
-                        if (p.tipo === 'vapor') {
-                            ctx.fillStyle = 'rgba(200,220,240,' + (p.vida * 0.3) + ')';
-                            ctx.beginPath();
-                            ctx.arc(p.x + ctx.canvas.width * 0.5, p.y + ctx.canvas.height * 0.38, p.tamano * p
-                                .vida, 0, Math.PI * 2);
-                            ctx.fill();
-                        } else if (p.tipo === 'gota') {
-                            ctx.fillStyle = 'rgba(255,143,50,' + p.vida + ')';
-                            ctx.beginPath();
-                            ctx.arc(p.x + ctx.canvas.width * 0.5, p.y + ctx.canvas.height * 0.38, p.tamano,
-                                0, Math.PI * 2);
-                            ctx.fill();
-                        }
-                    }
-                }
-            };
-            const UIController = {
-                init: function() {
-                    if (LabEngine.experimentoIniciado && LabEngine.progresoGlobal > 0) {
-                        this.ocultarPantallaInicial();
-                        LabEngine.irAEstacion(LabEngine.estacionActual);
-                        if (LabEngine.progresoGlobal >= 9) {
-                            document.getElementById('led-estado').className = 'led-estado';
-                            document.getElementById('texto-estado').textContent = 'Completado';
-                        } else {
-                            document.getElementById('led-estado').className = 'led-estado procesando';
-                            document.getElementById('texto-estado').textContent = 'En proceso';
-                        }
-                    }
-                    this.actualizarProgreso();
-                    if (LabEngine.observaciones.length > 0) {
-                        const bitacora = document.getElementById('bitacora-contenido');
-                        bitacora.innerHTML = '';
-                        LabEngine.observaciones.forEach(obs => {
-                            this.agregarBitacora(obs.timestamp, obs.texto);
-                        });
-                    }
-                },
-                ocultarPantallaInicial: function() {
-                    document.getElementById('pantalla-inicial').classList.add('oculta');
-                },
-                actualizarOverlay: function(indice) {
-                    const nombres = [
-                        'Estacion 1: Balanza Analitica',
-                        'Estacion 2: Sistema de Disolucion con Reflujo',
-                        'Estacion 3: Adicion de Acido Hipofosforoso',
-                        'Estacion 4: Agitacion Prolongada (16 h)',
-                        'Estacion 5: Vertido en Placa Petri',
-                        'Estacion 6: Secado en Desecador',
-                        'Estacion 7: Corte de Membrana',
-                        'Estacion 8: Montaje en Celda EIS',
-                        'Estacion 9: Visualizacion EIS (Nyquist & Bode)'
-                    ];
-                    document.getElementById('nombre-estacion-overlay').textContent = nombres[indice] ||
-                        'Estacion ' + (indice + 1);
-                    document.getElementById('etapa-indicador').textContent = 'Etapa ' + (indice + 1) + '/9';
-                },
-                actualizarProgreso: function() {
-                    const porcentaje = Math.min((LabEngine.progresoGlobal / 9) * 100, 100);
-                    document.getElementById('barra-progreso-relleno').style.width = porcentaje + '%';
-                    document.getElementById('etapa-indicador').textContent = 'Etapa ' + (LabEngine.estacionActual + 1) +
-                        '/9';
-                },
-                actualizarParametros: function(datos) {
-                    document.getElementById('param-masa').textContent = datos.masa || '--';
-                    document.getElementById('param-temp').textContent = datos.temperatura || '--';
-                    document.getElementById('param-tiempo-agit').textContent = datos.tiempoAgitacion || '--';
-                    document.getElementById('param-diametro').textContent = datos.diametro || '--';
-                    document.getElementById('param-rs').textContent = datos.Rs || '--';
-                    document.getElementById('param-rct').textContent = datos.Rct || '--';
-                    document.getElementById('param-cdl').textContent = datos.Cdl || '--';
-                },
-                pulsoParametro: function(id) {
-                    const el = document.getElementById(id);
-                    if (!el) return;
-                    el.style.transition = 'all 0.15s ease-out';
-                    el.style.color = '#54ffb1';
-                    el.style.textShadow = '0 0 20px rgba(84,255,177,0.6)';
-                    setTimeout(() => {
-                        el.style.color = '';
-                        el.style.textShadow = '';
-                    }, 600);
-                },
-                agregarBitacora: function(ts, texto) {
-                    const contenedor = document.getElementById('bitacora-contenido');
-                    const entrada = document.createElement('div');
-                    entrada.className = 'entrada-bitacora';
-                    entrada.innerHTML = '<span class="timestamp">' + ts + '</span>' + texto;
-                    contenedor.insertBefore(entrada, contenedor.firstChild);
-                    if (contenedor.children.length > 50) {
-                        contenedor.removeChild(contenedor.lastChild);
-                    }
-                }
-            };
-            document.addEventListener('DOMContentLoaded', function() {
-                LabEngine.init();
-            });
-            if (!HTMLCanvasElement.prototype.roundRect) {
-                HTMLCanvasElement.prototype.roundRect = function(x, y, w, h, r) {
-                    if (typeof r === 'number') r = { tl: r, tr: r, br: r, bl: r };
-                    this.beginPath();
-                    this.moveTo(x + r.tl, y);
-                    this.lineTo(x + w - r.tr, y);
-                    this.quadraticCurveTo(x + w, y, x + w, y + r.tr);
-                    this.lineTo(x + w, y + h - r.br);
-                    this.quadraticCurveTo(x + w, y + h, x + w - r.br, y + h);
-                    this.lineTo(x + r.bl, y + h);
-                    this.quadraticCurveTo(x, y + h, x, y + h - r.bl);
-                    this.lineTo(x, y + r.tl);
-                    this.quadraticCurveTo(x, y, x + r.tl, y);
-                    this.closePath();
-                    return this;
-                };
             }
-            console.log('LabEngine v' + LabEngine.version +
-                ' | Plataforma Cientifica Premium | Sintesis PLA-HPA para EIS | Listo.');
-            console.log('Arquitectura modular cargada: LabEngine, SceneRenderer, InteractionManager, ExperimentController, ChartRenderer, ParticleEngine, UIController.');
-        })();
-    </script>
+        }
+    });
+}
+
+
+
+
+
+
+
+/* ==========================
+   ARRHENIUS CHART
+========================== */
+
+let arrheniusChart;
+
+function buildArrhenius(){
+
+    const ctx=document.getElementById('arrheniusChart').getContext('2d');
+
+    if(arrheniusChart){
+        arrheniusChart.destroy();
+    }
+
+    arrheniusChart=new Chart(ctx,{
+        type:'line',
+        data:{
+            labels:arrheniusX,
+            datasets:[{
+                data:arrheniusY,
+                borderColor:'#0f172a',
+                borderWidth:4,
+                tension:.25
+            }]
+        },
+        options:{
+            plugins:{
+                legend:{display:false},
+                title:{
+                    display:true,
+                    text:'Curva de Arrhenius'
+                }
+            },
+            scales:{
+                x:{
+                    title:{
+                        display:true,
+                        text:'1000/T'
+                    }
+                },
+                y:{
+                    title:{
+                        display:true,
+                        text:'ln(σ)'
+                    }
+                }
+            }
+        }
+    });
+}
+
+
+
+
+
+
+
+/* ==========================
+   ACTUALIZAR
+========================== */
+
+function updateCharts(){
+
+    const temp=document.getElementById('tempSlider').value;
+
+    buildNyquist(temp);
+    buildArrhenius();
+}
+
+
+
+
+
+
+
+/* ==========================
+   INIT
+========================== */
+
+window.onload=function(){
+
+    createParticles();
+    updateMembrane();
+    buildNyquist(300);
+    buildArrhenius();
+
+};
+
+</script>
+
+<footer>
+    Experiencia interactiva desarrollada para divulgación científica avanzada
+    • PLA/H₃PO₂ • Electrochemical Materials Science
+</footer>
+
+</div>
+
 </body>
 </html>
